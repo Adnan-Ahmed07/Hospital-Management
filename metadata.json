@@ -1,0 +1,5 @@
+{
+  "name": "AD Hospital System",
+  "description": "A comprehensive healthcare management platform featuring doctor search, appointment booking, and an admin dashboard for hospital staff. Built with React, TypeScript, and Tailwind CSS.",
+  "requestFramePermissions": []
+}
