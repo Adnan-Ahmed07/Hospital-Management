@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { doctorApi, appointmentApi } from '../services/api';
 import { Doctor } from '../types';
-import { Calendar, Clock, AlertCircle, CheckCircle, User, FileText, Phone, Mail, Loader2, X, Sun, Sunset, Info } from 'lucide-react';
+import { Calendar, Clock, AlertCircle, CheckCircle, User, FileText, Phone, Mail, Loader2, Info, Sun, Sunset, Ban, Sparkles } from 'lucide-react';
 import { useAuth } from '../services/authContext';
 
 const Appointments: React.FC = () => {
@@ -21,6 +21,10 @@ const Appointments: React.FC = () => {
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   const [dateError, setDateError] = useState<string | null>(null);
+  
+  // AI Scheduling State
+  const [aiThinking, setAiThinking] = useState(false);
+  const [aiReason, setAiReason] = useState<string | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -64,6 +68,7 @@ const Appointments: React.FC = () => {
     const checkSlots = async () => {
       setDateError(null);
       setBookedSlots([]);
+      setAiReason(null);
       setFormData(prev => ({ ...prev, time: '' })); // Reset time selection
 
       if (!formData.doctorId || !formData.date) return;
@@ -86,6 +91,23 @@ const Appointments: React.FC = () => {
 
     checkSlots();
   }, [formData.doctorId, formData.date, doctors]);
+
+  const handleAiSchedule = async () => {
+      if (!formData.doctorId || !formData.date) return;
+      setAiThinking(true);
+      setAiReason(null);
+      try {
+          // Artificial delay for effect
+          await new Promise(r => setTimeout(r, 800));
+          const result = await appointmentApi.getAiSchedule(formData.doctorId, formData.date);
+          setFormData(prev => ({ ...prev, time: result.recommendedSlot }));
+          setAiReason(result.reason);
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setAiThinking(false);
+      }
+  };
 
   const generateTimeSlots = () => {
     const morning: string[] = [];
@@ -147,6 +169,7 @@ const Appointments: React.FC = () => {
         patientPhone: '',
         symptoms: ''
       });
+      setAiReason(null);
       
     } catch (err: any) {
       const msg = err.message || "Failed to book appointment";
@@ -204,21 +227,24 @@ const Appointments: React.FC = () => {
             key={slot}
             type="button"
             disabled={isBooked}
-            onClick={() => setFormData({...formData, time: slot})}
+            onClick={() => {
+                setFormData({...formData, time: slot});
+                setAiReason(null); // Clear reason if manual selection
+            }}
             className={`
             py-2.5 px-2 rounded-lg text-sm font-bold transition-all relative overflow-hidden group border
             ${isBooked 
-                ? 'bg-slate-50 text-slate-400 cursor-not-allowed border-slate-100' 
+                ? 'bg-slate-50 border-red-100 text-red-300 cursor-not-allowed opacity-80' 
                 : isSelected 
                 ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/30 border-slate-900 scale-105 z-10' 
-                : 'bg-white text-slate-600 hover:border-teal-500 hover:text-teal-600 hover:shadow-md border-slate-200'
+                : 'bg-white text-slate-700 hover:border-teal-500 hover:text-teal-700 hover:shadow-md border-slate-200'
             }
             `}
             title={isBooked ? 'Slot unavailable' : 'Select this slot'}
         >
-            {slot}
+            <span className={isBooked ? 'line-through decoration-red-300' : ''}>{slot}</span>
             {isBooked && (
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTAgMTBMMTAgMFpNMTAgMTBMMCAwWiIgc3Ryb2tlPSIjOTQ5NDk0IiBzdHJva2Utd2lkdGg9IjEiIG9wYWNpdHk9IjAuMSIvPjwvc3ZnPg==')] opacity-60" />
+                <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_5px,#fee2e2_5px,#fee2e2_10px)] opacity-50" />
             )}
         </button>
     );
@@ -291,8 +317,8 @@ const Appointments: React.FC = () => {
                     />
                   </div>
                   {dateError && (
-                    <div className="mt-2 p-3 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-sm flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" /> 
+                    <div className="mt-2 p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm flex items-start gap-2">
+                      <Ban className="w-4 h-4 mt-0.5 flex-shrink-0" /> 
                       <span>{dateError}</span>
                     </div>
                   )}
@@ -302,9 +328,22 @@ const Appointments: React.FC = () => {
                   <div className="flex justify-between items-center mb-1">
                       <label className="text-sm font-bold text-slate-700">Select Time Slot</label>
                       {formData.date && formData.doctorId && !dateError && !checkingAvailability && (
-                          <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-100 flex items-center gap-1">
-                             <CheckCircle className="w-3 h-3" /> {availableCount} slots available
-                          </span>
+                          <div className="flex items-center gap-2">
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 ${availableCount > 0 ? 'bg-teal-50 text-teal-600 border-teal-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                                 {availableCount > 0 ? <CheckCircle className="w-3 h-3" /> : <Ban className="w-3 h-3" />} 
+                                 {availableCount} slots available
+                              </span>
+                              <button 
+                                type="button" 
+                                onClick={handleAiSchedule}
+                                disabled={aiThinking}
+                                className="text-xs font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all hover:shadow-md active:scale-95 animate-pulse"
+                                style={{ animationIterationCount: 2 }}
+                              >
+                                  {aiThinking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                                  {aiThinking ? 'Analyzing Schedule...' : 'AI Smart Schedule'}
+                              </button>
+                          </div>
                       )}
                   </div>
                   
@@ -321,48 +360,59 @@ const Appointments: React.FC = () => {
                   ) : (
                     <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 relative">
                         {checkingAvailability && (
-                            <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] z-20 flex items-center justify-center rounded-2xl">
-                                <div className="bg-white p-3 rounded-xl shadow-lg border border-slate-100 flex items-center gap-2">
+                            <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px] z-20 flex items-center justify-center rounded-2xl transition-all">
+                                <div className="bg-white px-4 py-3 rounded-xl shadow-xl border border-slate-100 flex items-center gap-3">
                                     <Loader2 className="w-5 h-5 animate-spin text-teal-600" />
-                                    <span className="text-sm font-bold text-slate-600">Checking availability...</span>
+                                    <span className="text-sm font-bold text-slate-700">Checking availability...</span>
                                 </div>
                             </div>
                         )}
                         
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                             {/* Morning Slots */}
                             <div>
-                                <h4 className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                                <h4 className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 pl-1">
                                     <Sun className="w-4 h-4 text-amber-500" /> Morning Session
                                 </h4>
-                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                                     {morning.map(slot => renderSlot(slot))}
                                 </div>
                             </div>
                             
                             {/* Afternoon Slots */}
                             <div>
-                                <h4 className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                                <h4 className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 pl-1">
                                     <Sunset className="w-4 h-4 text-orange-500" /> Afternoon Session
                                 </h4>
-                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                                     {afternoon.map(slot => renderSlot(slot))}
                                 </div>
                             </div>
                         </div>
 
+                        {/* AI Reason Display */}
+                        {aiReason && (
+                            <div className="mt-4 p-3 bg-indigo-50 border border-indigo-100 rounded-lg flex items-start gap-2 animate-[fadeIn_0.5s_ease-out]">
+                                <Sparkles className="w-4 h-4 text-indigo-600 mt-0.5 shrink-0" />
+                                <div>
+                                    <p className="text-xs font-bold text-indigo-700">AI Recommendation</p>
+                                    <p className="text-xs text-indigo-600">{aiReason}</p>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Legend */}
                         <div className="flex flex-wrap items-center gap-4 mt-6 pt-4 border-t border-slate-200 text-xs font-medium text-slate-500 justify-center sm:justify-start">
                             <div className="flex items-center gap-1.5">
-                                <span className="w-3 h-3 bg-white border border-slate-300 rounded-full"></span> Available
+                                <div className="w-4 h-4 bg-white border border-slate-200 rounded"></div> Available
                             </div>
                             <div className="flex items-center gap-1.5">
-                                <span className="w-3 h-3 bg-slate-900 rounded-full shadow-sm"></span> Selected
+                                <div className="w-4 h-4 bg-slate-900 border border-slate-900 rounded shadow-sm"></div> Selected
                             </div>
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-3 h-3 bg-slate-100 border border-slate-200 rounded-full relative flex items-center justify-center overflow-hidden">
-                                     <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTAgMTBMMTAgMFpNMTAgMTBMMCAwWiIgc3Ryb2tlPSIjOTQ5NDk0IiBzdHJva2Utd2lkdGg9IjEiIG9wYWNpdHk9IjAuNSIvPjwvc3ZnPg==')] opacity-50" />
-                                </div> Booked
+                            <div className="flex items-center gap-1.5 opacity-70">
+                                <div className="w-4 h-4 bg-slate-50 border border-red-100 rounded relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_2px,#fee2e2_2px,#fee2e2_4px)]" />
+                                </div> Booked / Conflict
                             </div>
                         </div>
                     </div>

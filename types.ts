@@ -31,6 +31,10 @@ export interface Appointment {
   symptoms: string;
   createdAt: string;
   isRead?: boolean; // For patient notifications
+  
+  // New Smart Features
+  meetingLink?: string; // For Telemedicine
+  flowStatus?: 'checked-in' | 'vitals' | 'consulting' | 'complete'; // For Smart Patient Flow
 }
 
 export interface NewsItem {

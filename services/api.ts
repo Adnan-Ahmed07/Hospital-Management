@@ -42,6 +42,90 @@ const MOCK_DOCTORS: Doctor[] = [
     description:
       "Dedicated to providing compassionate care for children of all ages.",
   },
+  {
+    id: "4",
+    name: "Dr. Aisha Rahman",
+    email: "aisha@hospital.com",
+    specialization: "Dermatology",
+    image:
+      "https://images.unsplash.com/photo-1502791451861-8a5fbb0f8f50?auto=format&fit=crop&q=80&w=300&h=300",
+    availability: ["Mon", "Thu"],
+    experience: 7,
+    description:
+      "Board-certified dermatologist focusing on medical and cosmetic skin care.",
+  },
+  {
+    id: "5",
+    name: "Dr. Luis Alvarez",
+    email: "luis@hospital.com",
+    specialization: "Orthopedics",
+    image:
+      "https://images.unsplash.com/photo-1526256262350-7da7584cf5eb?auto=format&fit=crop&q=80&w=300&h=300",
+    availability: ["Tue", "Wed"],
+    experience: 11,
+    description:
+      "Experienced orthopedic surgeon specializing in sports injuries and joint replacement.",
+  },
+  {
+    id: "6",
+    name: "Dr. Priya Kapoor",
+    email: "priya@hospital.com",
+    specialization: "Endocrinology",
+    image:
+      "https://images.unsplash.com/photo-1542736667-069246bdbc19?auto=format&fit=crop&q=80&w=300&h=300",
+    availability: ["Wed", "Fri"],
+    experience: 9,
+    description:
+      "Endocrinologist with a focus on diabetes management and thyroid disorders.",
+  },
+  {
+    id: "7",
+    name: "Dr. Daniel Okafor",
+    email: "daniel@hospital.com",
+    specialization: "Psychiatry",
+    image:
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=300&h=300",
+    availability: ["Mon", "Tue", "Thu"],
+    experience: 14,
+    description:
+      "Provides evidence-based psychiatric care for adolescents and adults.",
+  },
+  {
+    id: "8",
+    name: "Dr. Elena Petrova",
+    email: "elena@hospital.com",
+    specialization: "Oncology",
+    image:
+      "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=300&h=300",
+    availability: ["Tue", "Thu", "Fri"],
+    experience: 18,
+    description:
+      "Medical oncologist with expertise in precision therapies and clinical trials.",
+  },
+  {
+    id: "9",
+    name: "Dr. Omar Farouk",
+    email: "omar@hospital.com",
+    specialization: "Gastroenterology",
+    image:
+      "https://images.unsplash.com/photo-1521790945508-bf2a36314e85?auto=format&fit=crop&q=80&w=300&h=300",
+    availability: ["Mon", "Fri"],
+    experience: 10,
+    description:
+      "Specialist in GI disorders, endoscopy, and liver disease management.",
+  },
+  {
+    id: "10",
+    name: "Dr. Mei Lin",
+    email: "mei@hospital.com",
+    specialization: "Ophthalmology",
+    image:
+      "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=300&h=300",
+    availability: ["Wed", "Thu"],
+    experience: 6,
+    description:
+      "Ophthalmologist providing comprehensive eye care and minor surgical procedures.",
+  },
 ];
 
 const MOCK_NEWS: NewsItem[] = [
@@ -50,7 +134,7 @@ const MOCK_NEWS: NewsItem[] = [
     title: "Breakthrough in Alzheimer’s Research",
     content:
       "Our research team has identified a new protein marker that could lead to earlier detection.",
-    date: new Date("2024-01-10").toISOString(),
+    date: new Date("2023-11-15").toISOString(),
     image:
       "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80&w=600",
     category: "announcement",
@@ -60,39 +144,10 @@ const MOCK_NEWS: NewsItem[] = [
     title: "New Pediatric Wing Opens",
     content:
       "We are proud to announce the opening of our state-of-the-art pediatric wing, designed with child comfort in mind.",
-    date: new Date("2024-02-15").toISOString(),
+    date: new Date("2023-12-01").toISOString(),
     image:
       "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=600",
     category: "announcement",
-  },
-  {
-    id: "3",
-    title: "Community Health Camp",
-    content:
-      "Join our free community screening camp offering health checks and counseling for all ages.",
-    date: new Date("2024-03-20").toISOString(),
-    image:
-      "https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?auto=format&fit=crop&q=80&w=600",
-    category: "event",
-  },
-  {
-    id: "4",
-    title: "Free Vaccination Drive",
-    content:
-      "We are running a vaccination drive this weekend for seasonal flu and selected vaccines.",
-    date: new Date("2024-04-05").toISOString(),
-    image:
-      "https://images.unsplash.com/photo-1584036561584-b03c19da874c?auto=format&fit=crop&q=80&w=600",
-    category: "announcement",
-  },
-  {
-    id: "5",
-    title: "Hospital Tour Video",
-    content: "Take a guided video tour of our new facilities and services.",
-    date: new Date("2024-05-01").toISOString(),
-    image:
-      "https://res.cloudinary.com/demo/video/upload/w_1200,h_675,c_fill/sample.mp4",
-    category: "event",
   },
 ];
 
@@ -213,8 +268,6 @@ export const authApi = {
         body: JSON.stringify({ name, email, password }),
       });
     } catch (error: any) {
-      // IMPORTANT: If error is a validation error (like duplicate email), throw it so UI can show it.
-      // Don't fall back to offline mode for validation errors.
       if (
         error.message &&
         (error.message.toLowerCase().includes("exists") ||
@@ -224,7 +277,6 @@ export const authApi = {
         throw error;
       }
 
-      // Mock registration for offline/demo mode ONLY if network/server error
       console.warn(
         "Registration failed (network/server error), using offline fallback"
       );
@@ -301,6 +353,47 @@ export const appointmentApi = {
         status: "pending",
         createdAt: new Date().toISOString(),
       };
+    }
+  },
+
+  // FEATURE 1: AI Scheduling
+  getAiSchedule: async (
+    doctorId: string,
+    date: string
+  ): Promise<{ recommendedSlot: string; reason: string }> => {
+    try {
+      const res = await request("/appointments/ai-schedule", {
+        method: "POST",
+        body: JSON.stringify({ doctorId, date }),
+      });
+      return res; // Returns { recommendedSlot: "10:00", reason: "..." }
+    } catch (error) {
+      // Fallback Heuristic if server offline
+      return {
+        recommendedSlot: "10:00",
+        reason: "AI Service Offline (Fallback)",
+      };
+    }
+  },
+
+  // FEATURE 2: Telemedicine
+  generateMeetingLink: async (appointmentId: string): Promise<string> => {
+    try {
+      const res = await request(`/appointments/${appointmentId}/telemedicine`, {
+        method: "POST",
+      });
+      return res.link;
+    } catch (error) {
+      return `https://meet.jit.si/ADH-${appointmentId}`;
+    }
+  },
+
+  // FEATURE 5: FHIR Compatibility
+  getFhirData: async (email: string): Promise<any> => {
+    try {
+      return await request(`/patients/${email}/fhir`);
+    } catch (error) {
+      return { resourceType: "Bundle", type: "document", entry: [] };
     }
   },
 
@@ -390,7 +483,6 @@ export const uploadApi = {
       });
       return response.url;
     } catch (error) {
-      // Fallback for offline upload (fake URL)
       console.warn("Upload failed, using fake URL");
       return URL.createObjectURL(file);
     }

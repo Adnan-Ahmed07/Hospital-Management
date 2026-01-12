@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../services/authContext';
-import { Menu, X, Cross, User as UserIcon, LogOut, Phone, Siren, Award, Facebook, Twitter, Linkedin, LayoutDashboard } from 'lucide-react';
+import { Menu, X, Cross, User as UserIcon, LogOut, Phone, Siren, Award, Facebook, Twitter, Linkedin, LayoutDashboard, Globe } from 'lucide-react';
 
 const Layout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -71,7 +71,11 @@ const Layout: React.FC = () => {
                 </Link>
               )}
               
-              <div className="flex items-center pl-6 border-l border-slate-200 ml-4">
+              <div className="flex items-center pl-6 border-l border-slate-200 ml-4 gap-4">
+                <button className="flex items-center gap-1 text-slate-500 hover:text-teal-600 font-bold text-xs uppercase tracking-wide">
+                    <Globe className="w-4 h-4" /> EN
+                </button>
+
                 {user ? (
                   <div className="flex items-center gap-4">
                     <span className="text-sm text-slate-700 font-medium flex items-center gap-2">
