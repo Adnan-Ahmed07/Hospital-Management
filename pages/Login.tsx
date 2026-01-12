@@ -175,6 +175,10 @@ const Login: React.FC = () => {
                 onClick={() => {
                   setIsLogin(!isLogin);
                   setError('');
+                  // Clear fields on switch to prevent confusion
+                  setName('');
+                  setEmail('');
+                  setPassword('');
                 }}
               >
                 {isLogin ? "Sign up" : "Sign in"}

@@ -40,6 +40,15 @@ app.use((req, res, next) => {
     next();
 });
 
+// --- Mock Email Service ---
+const sendEmail = (to, subject, body) => {
+    console.log('\n--- 📧 EMAIL NOTIFICATION SENT ---');
+    console.log(`To: ${to}`);
+    console.log(`Subject: ${subject}`);
+    console.log(`Body: \n${body}`);
+    console.log('----------------------------------\n');
+};
+
 // --- Cloudinary Config ---
 let cloudinary;
 try {
@@ -69,6 +78,7 @@ const User = mongoose.model('User', userSchema);
 
 const doctorSchema = new mongoose.Schema({
     name: String,
+    email: String,
     specialization: String,
     image: String,
     availability: [String],
@@ -86,7 +96,8 @@ const appointmentSchema = new mongoose.Schema({
     date: Date,
     status: { type: String, enum: ['pending', 'confirmed', 'cancelled'], default: 'pending' },
     symptoms: String,
-    createdAt: { type: Date, default: Date.now }
+    createdAt: { type: Date, default: Date.now },
+    isRead: { type: Boolean, default: true } // Notifications: default true (read) for creator
 });
 const Appointment = mongoose.model('Appointment', appointmentSchema);
 
@@ -108,6 +119,7 @@ const seedDatabase = async () => {
             await Doctor.insertMany([
                 {
                     name: 'Dr. Sarah Johnson',
+                    email: 'sarah@hospital.com',
                     specialization: 'Cardiology',
                     image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300&h=300',
                     availability: ['Mon', 'Wed', 'Fri'],
@@ -116,6 +128,7 @@ const seedDatabase = async () => {
                 },
                 {
                     name: 'Dr. Michael Chen',
+                    email: 'michael@hospital.com',
                     specialization: 'Neurology',
                     image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=300&h=300',
                     availability: ['Tue', 'Thu'],
@@ -124,6 +137,7 @@ const seedDatabase = async () => {
                 },
                 {
                     name: 'Dr. Emily Williams',
+                    email: 'emily@hospital.com',
                     specialization: 'Pediatrics',
                     image: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?auto=format&fit=crop&q=80&w=300&h=300',
                     availability: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
@@ -143,6 +157,67 @@ const seedDatabase = async () => {
                 role: 'admin'
             });
         }
+        
+        // Seed initial doctor user accounts
+        const doctors = await Doctor.find();
+        for (const doc of doctors) {
+            if (doc.email) {
+                const userExists = await User.findOne({ email: doc.email });
+                if (!userExists) {
+                    console.log(`Seeding Doctor User: ${doc.name}`);
+                    await User.create({
+                        name: doc.name,
+                        email: doc.email,
+                        password: 'doctor123',
+                        role: 'doctor'
+                    });
+                }
+            }
+        }
+
+        // Seed initial news items if none exist
+        const newsCount = await News.countDocuments();
+        if (newsCount === 0) {
+            console.log('Seeding News Items...');
+            await News.insertMany([
+                {
+                    title: 'Breakthrough in Alzheimer\'s Research',
+                    content: 'Our research team has identified a new protein marker that could lead to earlier detection.',
+                    date: new Date('2024-01-10'),
+                    image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80&w=1200',
+                    category: 'announcement'
+                },
+                {
+                    title: 'New Pediatric Wing Opens',
+                    content: 'We are proud to announce the opening of our state-of-the-art pediatric wing, designed with child comfort in mind.',
+                    date: new Date('2024-02-15'),
+                    image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=1200',
+                    category: 'announcement'
+                },
+                {
+                    title: 'Community Health Camp',
+                    content: 'Join our free community screening camp offering health checks and counseling for all ages.',
+                    date: new Date('2024-03-20'),
+                    image: 'https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?auto=format&fit=crop&q=80&w=1200',
+                    category: 'event'
+                },
+                {
+                    title: 'Free Vaccination Drive',
+                    content: 'We are running a vaccination drive this weekend for seasonal flu and selected vaccines.',
+                    date: new Date('2024-04-05'),
+                    image: 'https://images.unsplash.com/photo-1584036561584-b03c19da874c?auto=format&fit=crop&q=80&w=1200',
+                    category: 'announcement'
+                },
+                {
+                    title: 'Hospital Tour Video',
+                    content: 'Take a guided video tour of our new facilities and services.',
+                    date: new Date('2024-05-01'),
+                    image: 'https://res.cloudinary.com/demo/video/upload/w_1200,h_675,c_fill/sample.mp4',
+                    category: 'event'
+                }
+            ]);
+        }
+
         console.log('Database Seeding Check Complete.');
     } catch (error) {
         console.error('Seeding error:', error);
@@ -179,6 +254,7 @@ app.get('/api/health', (req, res) => {
     res.json({
         server: 'online',
         database: states[state] || 'unknown',
+        cloudinary: (typeof cloudinary !== 'undefined' && cloudinary) ? 'configured' : 'not-configured'
     });
 });
 
@@ -187,7 +263,13 @@ app.post('/api/auth/register', async (req, res) => {
     try {
         const { name, email, password } = req.body;
         if (await User.findOne({ email })) return res.status(400).json({ message: 'Email already exists' });
-        const user = await User.create({ name, email, password, role: 'patient' });
+        
+        // Logic: All users are 'patient' by default. 
+        // EXCEPTION: If the email already exists in the 'Doctors' directory (added by Admin), they become a 'doctor' immediately.
+        const isDoctor = await Doctor.findOne({ email });
+        const role = isDoctor ? 'doctor' : 'patient';
+        
+        const user = await User.create({ name, email, password, role });
         res.status(201).json({ user: { id: user._id, ...user.toObject() }, token: 'jwt_mock_' + user._id });
     } catch (e) { res.status(500).json({ message: e.message }); }
 });
@@ -214,7 +296,14 @@ app.get('/api/doctors', async (req, res) => {
 
 app.post('/api/doctors', async (req, res) => {
     try {
+        // Create Doctor Profile
         const doc = await Doctor.create(req.body);
+        
+        // ADMIN ACTION: If a user with this email exists, promote them to 'doctor'
+        if (doc.email) {
+            await User.findOneAndUpdate({ email: doc.email }, { role: 'doctor' });
+        }
+        
         res.json({ ...doc.toObject(), id: doc._id });
     } catch (e) { res.status(500).json({ message: e.message }); }
 });
@@ -222,12 +311,25 @@ app.post('/api/doctors', async (req, res) => {
 app.put('/api/doctors/:id', async (req, res) => {
     try {
         const doc = await Doctor.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        
+        // ADMIN ACTION: Sync role
+        if (doc.email) {
+            await User.findOneAndUpdate({ email: doc.email }, { role: 'doctor' });
+        }
+        
         res.json({ ...doc.toObject(), id: doc._id });
     } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
 app.delete('/api/doctors/:id', async (req, res) => {
     try {
+        const doc = await Doctor.findById(req.params.id);
+        
+        // ADMIN ACTION: If doctor profile is deleted, demote user to 'patient'
+        if (doc && doc.email) {
+            await User.findOneAndUpdate({ email: doc.email }, { role: 'patient' });
+        }
+        
         await Doctor.findByIdAndDelete(req.params.id);
         res.json({ message: 'Deleted' });
     } catch (e) { res.status(500).json({ message: e.message }); }
@@ -250,6 +352,7 @@ app.post('/api/appointments', async (req, res) => {
         const { doctorId, date } = req.body;
         const exists = await Appointment.findOne({ doctorId, date: new Date(date), status: { $ne: 'cancelled' } });
         if (exists) return res.status(400).json({ message: 'Slot already booked' });
+        // isRead defaults to true in schema, which is correct for creation
         const appt = await Appointment.create(req.body);
         res.json({ ...appt.toObject(), id: appt._id });
     } catch (e) { res.status(500).json({ message: e.message }); }
@@ -271,7 +374,31 @@ app.get('/api/appointments/booked-slots', async (req, res) => {
 
 app.put('/api/appointments/:id', async (req, res) => {
     try {
-        const appt = await Appointment.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
+        const { status, isRead } = req.body;
+        
+        // Notification Logic: If status changes to non-pending, mark as unread for patient
+        // Unless isRead is explicitly provided (e.g., dismissing notification)
+        if (status && status !== 'pending') {
+            if (isRead === undefined) {
+                req.body.isRead = false;
+            }
+        }
+        
+        const appt = await Appointment.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        
+        // Send Email if status confirmed
+        if (status === 'confirmed') {
+             const dateStr = new Date(appt.date).toLocaleString('en-US', { 
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+             });
+             
+             sendEmail(
+                appt.patientEmail,
+                'Appointment Confirmed - AD Hospital',
+                `Dear ${appt.patientName},\n\nYour appointment with ${appt.doctorName} on ${dateStr} has been CONFIRMED.\n\nPlease arrive 15 minutes before your scheduled time.\n\nRegards,\nAD Hospital Admin`
+             );
+        }
+        
         res.json({ ...appt.toObject(), id: appt._id });
     } catch (e) { res.status(500).json({ message: e.message }); }
 });

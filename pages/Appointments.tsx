@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { doctorApi, appointmentApi } from '../services/api';
 import { Doctor } from '../types';
-import { Calendar, Clock, AlertCircle, CheckCircle, User, FileText, Phone, Mail, Loader2, X } from 'lucide-react';
+import { Calendar, Clock, AlertCircle, CheckCircle, User, FileText, Phone, Mail, Loader2, X, Sun, Sunset, Info } from 'lucide-react';
 import { useAuth } from '../services/authContext';
 
 const Appointments: React.FC = () => {
@@ -47,6 +47,18 @@ const Appointments: React.FC = () => {
     init();
   }, []);
 
+  const fetchBookedSlots = async (docId: string, dateVal: string) => {
+      setCheckingAvailability(true);
+      try {
+        const slots = await appointmentApi.getBookedSlots(docId, dateVal);
+        setBookedSlots(slots);
+      } catch (e) {
+        console.error("Failed to check availability", e);
+      } finally {
+        setCheckingAvailability(false);
+      }
+  };
+
   // Effect to check availability and validate doctor schedule
   useEffect(() => {
     const checkSlots = async () => {
@@ -62,7 +74,6 @@ const Appointments: React.FC = () => {
       // Check if doctor works on this day
       const dateObj = new Date(formData.date);
       // Adjust to ensure we get the right weekday name regardless of timezone quirks for YYYY-MM-DD input
-      // Creating a date from string assumes UTC in some parsers, so we use the timezone offset to get local day
       const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }); 
       
       if (!selectedDoctor.availability.includes(dayName)) {
@@ -70,27 +81,34 @@ const Appointments: React.FC = () => {
         return;
       }
 
-      setCheckingAvailability(true);
-      try {
-        const slots = await appointmentApi.getBookedSlots(formData.doctorId, formData.date);
-        setBookedSlots(slots);
-      } catch (e) {
-        console.error("Failed to check availability", e);
-      } finally {
-        setCheckingAvailability(false);
-      }
+      await fetchBookedSlots(formData.doctorId, formData.date);
     };
 
     checkSlots();
   }, [formData.doctorId, formData.date, doctors]);
 
   const generateTimeSlots = () => {
-    const slots = [];
+    const morning: string[] = [];
+    const afternoon: string[] = [];
     for (let i = 9; i <= 17; i++) {
-      slots.push(`${i.toString().padStart(2, '0')}:00`);
-      if (i !== 17) slots.push(`${i.toString().padStart(2, '0')}:30`);
+      const hour = i.toString().padStart(2, '0');
+      const timeFull = `${hour}:00`;
+      const timeHalf = `${hour}:30`;
+      
+      if (i < 12) {
+          morning.push(timeFull);
+          morning.push(timeHalf);
+      } else if (i === 12) {
+          afternoon.push(timeFull);
+          afternoon.push(timeHalf);
+      } else if (i < 17) {
+          afternoon.push(timeFull);
+          afternoon.push(timeHalf);
+      } else {
+          afternoon.push(timeFull); // 17:00
+      }
     }
-    return slots;
+    return { morning, afternoon };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -131,7 +149,14 @@ const Appointments: React.FC = () => {
       });
       
     } catch (err: any) {
-      setError(err.message || "Failed to book appointment");
+      const msg = err.message || "Failed to book appointment";
+      setError(msg);
+      // If error suggests booking conflict, refresh slots immediately
+      if (msg.toLowerCase().includes('booked') || msg.toLowerCase().includes('conflict')) {
+         if(formData.doctorId && formData.date) {
+            fetchBookedSlots(formData.doctorId, formData.date);
+         }
+      }
     } finally {
       setSubmitting(false);
     }
@@ -167,8 +192,37 @@ const Appointments: React.FC = () => {
     );
   }
 
-  const availableSlots = generateTimeSlots();
-  const availableCount = availableSlots.length - bookedSlots.length;
+  const { morning, afternoon } = generateTimeSlots();
+  const allSlots = [...morning, ...afternoon];
+  const availableCount = allSlots.length - bookedSlots.length;
+
+  const renderSlot = (slot: string) => {
+    const isBooked = bookedSlots.includes(slot);
+    const isSelected = formData.time === slot;
+    return (
+        <button
+            key={slot}
+            type="button"
+            disabled={isBooked}
+            onClick={() => setFormData({...formData, time: slot})}
+            className={`
+            py-2.5 px-2 rounded-lg text-sm font-bold transition-all relative overflow-hidden group border
+            ${isBooked 
+                ? 'bg-slate-50 text-slate-400 cursor-not-allowed border-slate-100' 
+                : isSelected 
+                ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/30 border-slate-900 scale-105 z-10' 
+                : 'bg-white text-slate-600 hover:border-teal-500 hover:text-teal-600 hover:shadow-md border-slate-200'
+            }
+            `}
+            title={isBooked ? 'Slot unavailable' : 'Select this slot'}
+        >
+            {slot}
+            {isBooked && (
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTAgMTBMMTAgMFpNMTAgMTBMMCAwWiIgc3Ryb2tlPSIjOTQ5NDk0IiBzdHJva2Utd2lkdGg9IjEiIG9wYWNpdHk9IjAuMSIvPjwvc3ZnPg==')] opacity-60" />
+            )}
+        </button>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -248,8 +302,8 @@ const Appointments: React.FC = () => {
                   <div className="flex justify-between items-center mb-1">
                       <label className="text-sm font-bold text-slate-700">Select Time Slot</label>
                       {formData.date && formData.doctorId && !dateError && !checkingAvailability && (
-                          <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-100">
-                             {availableCount} slots available
+                          <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-100 flex items-center gap-1">
+                             <CheckCircle className="w-3 h-3" /> {availableCount} slots available
                           </span>
                       )}
                   </div>
@@ -264,45 +318,41 @@ const Appointments: React.FC = () => {
                         <AlertCircle className="w-8 h-8 text-red-300" />
                         No slots available on this date due to schedule conflict.
                      </div>
-                  ) : checkingAvailability ? (
-                    <div className="flex items-center justify-center p-8 bg-slate-50 rounded-xl border border-slate-100">
-                      <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
-                      <span className="ml-2 text-slate-600 font-medium">Checking availability...</span>
-                    </div>
                   ) : (
-                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                        {availableSlots.map((slot) => {
-                            const isBooked = bookedSlots.includes(slot);
-                            const isSelected = formData.time === slot;
-                            return (
-                            <button
-                                key={slot}
-                                type="button"
-                                disabled={isBooked}
-                                onClick={() => setFormData({...formData, time: slot})}
-                                className={`
-                                py-3 px-2 rounded-xl text-sm font-bold transition-all relative overflow-hidden group
-                                ${isBooked 
-                                    ? 'bg-white text-slate-300 cursor-not-allowed border border-slate-100' 
-                                    : isSelected 
-                                    ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/30 border border-slate-900 scale-105 z-10' 
-                                    : 'bg-white text-slate-600 hover:border-teal-500 hover:text-teal-600 hover:shadow-md border border-slate-200'
-                                }
-                                `}
-                            >
-                                {slot}
-                                {isBooked && (
-                                <span className="absolute inset-0 flex items-center justify-center bg-slate-50/50 backdrop-blur-[1px]">
-                                    <span className="sr-only">Booked</span>
-                                    <X className="w-4 h-4 text-slate-300" />
-                                </span>
-                                )}
-                            </button>
-                            );
-                        })}
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 relative">
+                        {checkingAvailability && (
+                            <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] z-20 flex items-center justify-center rounded-2xl">
+                                <div className="bg-white p-3 rounded-xl shadow-lg border border-slate-100 flex items-center gap-2">
+                                    <Loader2 className="w-5 h-5 animate-spin text-teal-600" />
+                                    <span className="text-sm font-bold text-slate-600">Checking availability...</span>
+                                </div>
+                            </div>
+                        )}
+                        
+                        <div className="space-y-4">
+                            {/* Morning Slots */}
+                            <div>
+                                <h4 className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                                    <Sun className="w-4 h-4 text-amber-500" /> Morning Session
+                                </h4>
+                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                                    {morning.map(slot => renderSlot(slot))}
+                                </div>
+                            </div>
+                            
+                            {/* Afternoon Slots */}
+                            <div>
+                                <h4 className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                                    <Sunset className="w-4 h-4 text-orange-500" /> Afternoon Session
+                                </h4>
+                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                                    {afternoon.map(slot => renderSlot(slot))}
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-4 mt-4 pt-4 border-t border-slate-200 text-xs font-medium text-slate-500 justify-center sm:justify-start">
+
+                        {/* Legend */}
+                        <div className="flex flex-wrap items-center gap-4 mt-6 pt-4 border-t border-slate-200 text-xs font-medium text-slate-500 justify-center sm:justify-start">
                             <div className="flex items-center gap-1.5">
                                 <span className="w-3 h-3 bg-white border border-slate-300 rounded-full"></span> Available
                             </div>
@@ -310,8 +360,8 @@ const Appointments: React.FC = () => {
                                 <span className="w-3 h-3 bg-slate-900 rounded-full shadow-sm"></span> Selected
                             </div>
                             <div className="flex items-center gap-1.5">
-                                <div className="w-3 h-3 bg-white border border-slate-200 rounded-full relative flex items-center justify-center">
-                                    <X className="w-2 h-2 text-slate-300" />
+                                <div className="w-3 h-3 bg-slate-100 border border-slate-200 rounded-full relative flex items-center justify-center overflow-hidden">
+                                     <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTAgMTBMMTAgMFpNMTAgMTBMMCAwWiIgc3Ryb2tlPSIjOTQ5NDk0IiBzdHJva2Utd2lkdGg9IjEiIG9wYWNpdHk9IjAuNSIvPjwvc3ZnPg==')] opacity-50" />
                                 </div> Booked
                             </div>
                         </div>
@@ -401,8 +451,9 @@ const Appointments: React.FC = () => {
                     </span>
                 ) : 'Confirm Appointment'}
               </button>
-              <p className="text-xs text-center text-slate-400 mt-4">
-                By clicking "Confirm Appointment", you agree to our Terms of Service and Privacy Policy.
+              <p className="text-xs text-center text-slate-400 mt-4 flex items-center justify-center gap-1">
+                <Info className="w-3 h-3" />
+                By clicking "Confirm Appointment", you agree to our Terms of Service.
               </p>
             </div>
           </form>

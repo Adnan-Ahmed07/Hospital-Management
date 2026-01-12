@@ -30,6 +30,7 @@ export interface Appointment {
   status: 'pending' | 'confirmed' | 'cancelled';
   symptoms: string;
   createdAt: string;
+  isRead?: boolean; // For patient notifications
 }
 
 export interface NewsItem {
