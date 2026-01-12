@@ -39,12 +39,28 @@ const PatientDashboard: React.FC = () => {
           window.open(currentLink, '_blank');
           return;
       }
-      // Generate link if not exists (simulate joining flow)
-      const link = await appointmentApi.generateMeetingLink(id);
-      window.open(link, '_blank');
-      // Refresh to get link in UI
-      const data = await appointmentApi.getAll({ patientEmail: user?.email });
-      setAppointments(data);
+      
+      // Open tab immediately to avoid popup blocker
+      const newTab = window.open('', '_blank');
+      if (newTab) {
+          newTab.document.write("<html><body style='font-family:sans-serif;text-align:center;padding-top:20%;'><h3>Connecting to Secure Meeting...</h3><p>Please wait while we generate your secure link.</p></body></html>");
+      }
+
+      try {
+        const link = await appointmentApi.generateMeetingLink(id);
+        
+        if (newTab) {
+            newTab.location.href = link;
+        } else {
+             window.location.href = link;
+        }
+
+        // Refresh to get link in UI locally
+        setAppointments(prev => prev.map(a => a.id === id ? { ...a, meetingLink: link } : a));
+      } catch (e) {
+        console.error("Failed to join video call", e);
+        if (newTab) newTab.close();
+      }
   };
 
   const handleDownloadFHIR = async () => {

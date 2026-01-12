@@ -9,6 +9,7 @@ import Admin from './pages/Admin';
 import DoctorDashboard from './pages/DoctorDashboard';
 import PatientDashboard from './pages/PatientDashboard';
 import { AuthProvider, useAuth } from './services/authContext';
+import { LanguageProvider } from './services/languageContext';
 import { Role } from './types';
 
 interface ProtectedRouteProps {
@@ -39,45 +40,47 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <HashRouter>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Home />} />
-            <Route path="doctors" element={<Doctors />} />
-            <Route path="appointments" element={<Appointments />} />
-            <Route path="login" element={<Login />} />
-            
-            <Route 
-              path="admin" 
-              element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <Admin />
-                </ProtectedRoute>
-              } 
-            />
+    <LanguageProvider>
+      <AuthProvider>
+        <HashRouter>
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Home />} />
+              <Route path="doctors" element={<Doctors />} />
+              <Route path="appointments" element={<Appointments />} />
+              <Route path="login" element={<Login />} />
+              
+              <Route 
+                path="admin" 
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <Admin />
+                  </ProtectedRoute>
+                } 
+              />
 
-            <Route 
-              path="doctor-dashboard" 
-              element={
-                <ProtectedRoute allowedRoles={['doctor']}>
-                  <DoctorDashboard />
-                </ProtectedRoute>
-              } 
-            />
+              <Route 
+                path="doctor-dashboard" 
+                element={
+                  <ProtectedRoute allowedRoles={['doctor']}>
+                    <DoctorDashboard />
+                  </ProtectedRoute>
+                } 
+              />
 
-            <Route 
-              path="patient-dashboard" 
-              element={
-                <ProtectedRoute allowedRoles={['patient']}>
-                  <PatientDashboard />
-                </ProtectedRoute>
-              } 
-            />
-          </Route>
-        </Routes>
-      </HashRouter>
-    </AuthProvider>
+              <Route 
+                path="patient-dashboard" 
+                element={
+                  <ProtectedRoute allowedRoles={['patient']}>
+                    <PatientDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+            </Route>
+          </Routes>
+        </HashRouter>
+      </AuthProvider>
+    </LanguageProvider>
   );
 };
 

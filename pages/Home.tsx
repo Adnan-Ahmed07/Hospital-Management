@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ChevronRight, ChevronLeft, Play, Calendar, User, Activity, Heart, Brain, Bone, Eye, Microscope, ShieldCheck, X, Award, CheckCircle, Wifi, Smartphone, Globe, Database, Cpu, Zap } from 'lucide-react';
+import { ArrowRight, ChevronRight, ChevronLeft, Play, Calendar, User, Activity, Heart, Brain, Bone, Eye, Microscope, ShieldCheck, X, Award, CheckCircle, Wifi, Smartphone, Globe, Database, Cpu, Zap, Phone, Info } from 'lucide-react';
 import Slider from 'react-slick';
 import { newsApi } from '../services/api';
 import { NewsItem } from '../types';
+import { useLanguage } from '../services/languageContext';
 
 // Helper to check if url is video
 const isVideo = (url: string) => {
@@ -39,6 +40,7 @@ const PrevArrow = (props: any) => {
 };
 
 const Home: React.FC = () => {
+  const { t } = useLanguage();
   const [news, setNews] = useState<NewsItem[]>([]);
   const [selectedBodyPart, setSelectedBodyPart] = useState('Head');
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
@@ -124,16 +126,16 @@ const Home: React.FC = () => {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
               </span>
-              <span className="text-teal-300 font-bold tracking-wide text-xs uppercase">JCI Accredited Facility</span>
+              <span className="text-teal-300 font-bold tracking-wide text-xs uppercase">{t('hero.jci')}</span>
             </div>
             
             <h1 className="text-5xl md:text-7xl font-bold text-white mb-8 leading-tight tracking-tight">
-              A Vision for <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-emerald-400">Complete Healthcare</span>
+              {t('hero.title_start')} <br/>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-emerald-400">{t('hero.title_end')}</span>
             </h1>
             
             <p className="text-xl text-slate-200 mb-10 font-light leading-relaxed max-w-2xl">
-              Experience world-class medical excellence where advanced technology meets compassionate care. Your health journey starts here.
+              {t('hero.subtitle')}
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4">
@@ -141,14 +143,14 @@ const Home: React.FC = () => {
                 to="/appointments" 
                 className="group bg-teal-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-teal-700 transition-all shadow-lg shadow-teal-900/20 flex items-center justify-center gap-2"
               >
-                Book Appointment
+                {t('hero.book_btn')}
                 <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link 
                 to="/doctors" 
                 className="group bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 py-4 rounded-xl font-bold hover:bg-white/20 transition-all flex items-center justify-center gap-2"
               >
-                Find Doctors
+                {t('hero.find_btn')}
                 <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 -ml-5 group-hover:ml-0 transition-all duration-300" />
               </Link>
             </div>
@@ -156,98 +158,154 @@ const Home: React.FC = () => {
             <div className="mt-16 flex items-center gap-8 border-t border-white/10 pt-8">
               <div>
                 <div className="text-3xl font-bold text-white mb-0.5">25+</div>
-                <div className="text-slate-400 text-sm font-medium uppercase tracking-wider">Years of Service</div>
+                <div className="text-slate-400 text-sm font-medium uppercase tracking-wider">{t('hero.stat_years')}</div>
               </div>
               <div className="w-px h-10 bg-white/10"></div>
               <div>
                 <div className="text-3xl font-bold text-white mb-0.5">150+</div>
-                <div className="text-slate-400 text-sm font-medium uppercase tracking-wider">Specialist Doctors</div>
+                <div className="text-slate-400 text-sm font-medium uppercase tracking-wider">{t('hero.stat_docs')}</div>
               </div>
               <div className="w-px h-10 bg-white/10"></div>
               <div>
                 <div className="text-3xl font-bold text-white mb-0.5">24/7</div>
-                <div className="text-slate-400 text-sm font-medium uppercase tracking-wider">Emergency Care</div>
+                <div className="text-slate-400 text-sm font-medium uppercase tracking-wider">{t('hero.stat_emergency')}</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Body Part Selector Section */}
-      <section className="py-24 bg-[#fdfbf6]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Find Care by Condition</h2>
-            <p className="text-slate-500 text-lg max-w-2xl mx-auto">Select a body region to instantly find relevant specialist departments and doctors available for consultation.</p>
+      {/* REDESIGNED Body Part Selector Section */}
+      <section className="py-32 bg-slate-50 relative overflow-hidden">
+        {/* Decorative Background Blobs */}
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-[600px] h-[600px] bg-teal-300/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-[600px] h-[600px] bg-blue-300/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-20">
+            <span className="text-teal-600 font-bold tracking-widest uppercase text-sm mb-3 block">{t('find_care.tag')}</span>
+            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6 font-serif">{t('find_care.title')}</h2>
+            <p className="text-slate-500 text-lg max-w-2xl mx-auto leading-relaxed">
+              {t('find_care.desc')}
+            </p>
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-16 items-start justify-center">
-            {/* Left: Selector */}
-            <div className="w-full lg:w-1/3 space-y-3">
-              <h3 className="text-sm font-bold text-slate-400 mb-6 uppercase tracking-widest pl-2">Select Region</h3>
-              {bodyIcons.map((part) => {
-                const Icon = part.icon;
-                const isSelected = selectedBodyPart === part.name;
-                return (
-                  <button
-                    key={part.name}
-                    onClick={() => setSelectedBodyPart(part.name)}
-                    className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 border-2 ${
-                      isSelected 
-                        ? 'bg-white shadow-xl border-teal-500 scale-105 z-10' 
-                        : 'border-transparent hover:bg-white hover:shadow-md text-slate-500 hover:text-slate-800'
-                    }`}
-                  >
-                    <div className={`p-3 rounded-xl transition-colors ${isSelected ? 'bg-teal-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                      <Icon className="w-6 h-6" />
-                    </div>
-                    <span className={`font-bold text-lg ${isSelected ? 'text-slate-900' : ''}`}>{part.name}</span>
-                    {isSelected && <ChevronRight className="ml-auto w-5 h-5 text-teal-500" />}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Right: Departments Grid */}
-            <div className="w-full lg:w-2/3">
-               <div className="bg-white p-8 md:p-12 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 min-h-[500px] flex flex-col">
-                <div className="mb-10 flex items-end justify-between border-b border-slate-100 pb-6">
-                  <div>
-                    <h3 className="text-2xl font-bold text-slate-900">
-                      Departments for <span className="text-teal-600 border-b-4 border-teal-200/50">{selectedBodyPart}</span>
-                    </h3>
-                    <p className="text-slate-500 mt-2">Specialized care units available</p>
-                  </div>
-                  <Link to="/doctors" className="hidden sm:flex items-center text-teal-600 font-bold hover:text-teal-700">
-                    View All Doctors <ArrowRight className="w-4 h-4 ml-2" />
-                  </Link>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-grow content-start">
-                  {departments[selectedBodyPart]?.map((dept, idx) => (
-                    <Link 
-                      key={idx}
-                      to={`/doctors?specialty=${encodeURIComponent(dept)}`}
-                      className="group flex items-center justify-between p-5 bg-slate-50 rounded-2xl hover:bg-teal-600 hover:text-white transition-all duration-300 border border-slate-100 hover:border-teal-500 hover:shadow-lg hover:shadow-teal-600/20"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-2 h-2 rounded-full bg-teal-400 group-hover:bg-white transition-colors"></div>
-                        <span className="font-bold text-lg">{dept}</span>
-                      </div>
-                      <div className="w-8 h-8 rounded-full bg-white/0 group-hover:bg-white/20 flex items-center justify-center transition-colors">
-                        <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-white transform group-hover:translate-x-0.5 transition-transform" />
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-                
-                <div className="mt-8 pt-6 border-t border-slate-100 sm:hidden">
-                   <Link to="/doctors" className="flex items-center justify-center w-full py-3 text-teal-600 font-bold bg-teal-50 rounded-xl">
-                    View All Doctors
-                  </Link>
+          <div className="flex flex-col lg:flex-row gap-12 lg:items-start">
+            
+            {/* Left: Interactive Anatomy Selector */}
+            <div className="w-full lg:w-1/3 lg:sticky lg:top-24">
+              <div className="bg-white p-2 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
+                <div className="space-y-1">
+                  {bodyIcons.map((part) => {
+                    const Icon = part.icon;
+                    const isSelected = selectedBodyPart === part.name;
+                    return (
+                      <button
+                        key={part.name}
+                        onClick={() => setSelectedBodyPart(part.name)}
+                        className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 group ${
+                          isSelected 
+                            ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-lg shadow-teal-500/30 translate-x-2' 
+                            : 'hover:bg-slate-50 text-slate-500 hover:text-slate-900'
+                        }`}
+                      >
+                        <div className={`p-2.5 rounded-xl transition-colors ${
+                          isSelected 
+                            ? 'bg-white/20 text-white' 
+                            : 'bg-white border border-slate-100 text-slate-400 group-hover:border-teal-200 group-hover:text-teal-500'
+                        }`}>
+                          <Icon className="w-6 h-6" />
+                        </div>
+                        <span className="font-bold text-lg tracking-wide">{part.name}</span>
+                        <ChevronRight className={`ml-auto w-5 h-5 transition-transform ${isSelected ? 'text-white' : 'text-slate-300 group-hover:text-teal-500 group-hover:translate-x-1'}`} />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
+              
+              {/* Quick Contact Card */}
+              <div className="mt-8 bg-slate-900 rounded-3xl p-8 text-white relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/20 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-700" />
+                  <div className="relative z-10">
+                      <h4 className="font-bold text-xl mb-2">{t('find_care.need_help')}</h4>
+                      <p className="text-slate-400 text-sm mb-6">{t('find_care.support_text')}</p>
+                      <a href="tel:10666" className="inline-flex items-center gap-2 text-teal-300 font-bold hover:text-teal-200 transition-colors">
+                          <Phone className="w-4 h-4" /> {t('find_care.call_us')}
+                      </a>
+                  </div>
+              </div>
             </div>
+
+            {/* Right: Dynamic Content Panel */}
+            <div className="w-full lg:w-2/3">
+               <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden min-h-[600px] flex flex-col relative animate-fade-in">
+                  
+                  {/* Header Image/Gradient Area */}
+                  <div className="h-48 bg-slate-100 relative overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-teal-600 to-emerald-600 opacity-90" />
+                      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/medical-icons.png')] opacity-10" />
+                      
+                      {/* Abstract Shapes */}
+                      <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
+                      <div className="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full blur-xl" />
+
+                      <div className="absolute bottom-0 left-0 w-full p-10 flex items-end justify-between">
+                          <div>
+                             <div className="flex items-center gap-2 text-teal-100 font-bold uppercase tracking-widest text-xs mb-2">
+                                <Activity className="w-4 h-4" /> {t('find_care.selected_region')}
+                             </div>
+                             <h3 className="text-4xl font-bold text-white font-serif tracking-tight">{selectedBodyPart} Care</h3>
+                          </div>
+                      </div>
+                  </div>
+
+                  {/* Content Body */}
+                  <div className="p-8 md:p-12 flex-grow flex flex-col">
+                      <div className="flex items-center justify-between mb-8">
+                          <p className="text-slate-500 font-medium">{t('find_care.available_specialists')}</p>
+                          <Link to="/doctors" className="hidden sm:flex items-center gap-2 text-teal-600 font-bold text-sm hover:underline">
+                              {t('find_care.view_all')} <ArrowRight className="w-4 h-4" />
+                          </Link>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+                        {departments[selectedBodyPart]?.map((dept, idx) => (
+                          <Link 
+                            key={idx}
+                            to={`/doctors?specialty=${encodeURIComponent(dept)}`}
+                            className="group relative bg-slate-50 hover:bg-white border border-slate-100 hover:border-teal-100 p-6 rounded-2xl transition-all duration-300 hover:shadow-xl hover:shadow-teal-900/5 flex items-center gap-5"
+                          >
+                            <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center text-teal-600 group-hover:bg-teal-600 group-hover:text-white transition-colors duration-300 shrink-0">
+                                <Microscope className="w-6 h-6" />
+                            </div>
+                            <div className="flex-grow">
+                                <h4 className="font-bold text-lg text-slate-800 group-hover:text-teal-700 transition-colors">{dept}</h4>
+                                <span className="text-xs text-slate-400 font-medium group-hover:text-teal-500/70">View Specialists</span>
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-slate-200/50 group-hover:bg-teal-50 flex items-center justify-center transition-colors">
+                                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-teal-600" />
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+
+                      {/* Info snippet */}
+                      <div className="mt-auto bg-blue-50/50 rounded-2xl p-6 border border-blue-100 flex gap-4">
+                          <div className="p-2 bg-blue-100 text-blue-600 rounded-lg h-fit">
+                              <Info className="w-5 h-5" />
+                          </div>
+                          <div>
+                              <h5 className="font-bold text-slate-900 text-sm mb-1">{t('find_care.did_you_know')}</h5>
+                              <p className="text-sm text-slate-500 leading-relaxed">
+                                  Our {selectedBodyPart} department is equipped with the latest diagnostic technology, ensuring 99% accuracy in early detection and personalized treatment plans.
+                              </p>
+                          </div>
+                      </div>
+                  </div>
+               </div>
+            </div>
+
           </div>
         </div>
       </section>
@@ -339,13 +397,13 @@ const Home: React.FC = () => {
                     onClick={() => setShowLearnMore(true)}
                     className="inline-flex bg-white text-slate-900 px-6 py-3 rounded-lg font-bold hover:bg-slate-100 transition-colors items-center gap-2"
                  >
-                   Learn More <ArrowRight className="w-4 h-4" />
+                   {t('common.learn_more')} <ArrowRight className="w-4 h-4" />
                  </button>
                  <button 
                     onClick={() => setShowCertificates(true)}
                     className="inline-flex border border-slate-700 text-white px-6 py-3 rounded-lg font-bold hover:bg-slate-800 transition-colors"
                  >
-                   View Certificates
+                   {t('common.view_certificates')}
                  </button>
                </div>
              </div>
@@ -363,10 +421,10 @@ const Home: React.FC = () => {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-teal-400 font-bold tracking-widest uppercase text-sm mb-2 block">Digital Transformation</span>
-            <h2 className="text-3xl md:text-5xl font-bold mb-6 font-serif">Smart Hospital Ecosystem</h2>
+            <span className="text-teal-400 font-bold tracking-widest uppercase text-sm mb-2 block">{t('features.tag')}</span>
+            <h2 className="text-3xl md:text-5xl font-bold mb-6 font-serif">{t('features.title')}</h2>
             <p className="text-slate-400 text-lg leading-relaxed">
-              We leverage cutting-edge digital solutions to streamline your healthcare experience, making it more accessible, efficient, and personalized.
+              {t('features.desc')}
             </p>
           </div>
 
@@ -376,7 +434,7 @@ const Home: React.FC = () => {
                 <div className="w-14 h-14 bg-teal-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                    <Cpu className="w-7 h-7 text-teal-400" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">AI-Assisted Scheduling</h3>
+                <h3 className="text-xl font-bold mb-3">{t('features.ai_scheduling')}</h3>
                 <p className="text-slate-400 text-sm leading-relaxed">Intelligent booking systems that optimize doctor availability and reduce patient wait times.</p>
              </div>
 
@@ -385,7 +443,7 @@ const Home: React.FC = () => {
                 <div className="w-14 h-14 bg-blue-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                    <Wifi className="w-7 h-7 text-blue-400" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">Integrated Telemedicine</h3>
+                <h3 className="text-xl font-bold mb-3">{t('features.telemedicine')}</h3>
                 <p className="text-slate-400 text-sm leading-relaxed">Secure, high-definition video consultations allowing you to connect with specialists from home.</p>
              </div>
 
@@ -394,7 +452,7 @@ const Home: React.FC = () => {
                 <div className="w-14 h-14 bg-purple-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                    <Zap className="w-7 h-7 text-purple-400" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">Smart Patient Flow</h3>
+                <h3 className="text-xl font-bold mb-3">{t('features.patient_flow')}</h3>
                 <p className="text-slate-400 text-sm leading-relaxed">Real-time tracking and automated workflows to ensure seamless admission and discharge processes.</p>
              </div>
 
@@ -403,7 +461,7 @@ const Home: React.FC = () => {
                 <div className="w-14 h-14 bg-orange-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                    <Globe className="w-7 h-7 text-orange-400" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">Local Language Support</h3>
+                <h3 className="text-xl font-bold mb-3">{t('features.language_support')}</h3>
                 <p className="text-slate-400 text-sm leading-relaxed">Multi-language interfaces and support services ensuring clear communication for every patient.</p>
              </div>
 
@@ -412,7 +470,7 @@ const Home: React.FC = () => {
                 <div className="w-14 h-14 bg-pink-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                    <Database className="w-7 h-7 text-pink-400" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">FHIR & EHR Compatibility</h3>
+                <h3 className="text-xl font-bold mb-3">{t('features.fhir')}</h3>
                 <p className="text-slate-400 text-sm leading-relaxed">Interoperable health records ensuring your medical history is accurate and accessible across systems.</p>
              </div>
 
@@ -421,7 +479,7 @@ const Home: React.FC = () => {
                 <div className="w-14 h-14 bg-green-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                    <Smartphone className="w-7 h-7 text-green-400" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">Mobile-First Experience</h3>
+                <h3 className="text-xl font-bold mb-3">{t('features.mobile')}</h3>
                 <p className="text-slate-400 text-sm leading-relaxed">Manage appointments, view reports, and chat with doctors via our optimized mobile platform.</p>
              </div>
           </div>
@@ -433,14 +491,14 @@ const Home: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-end mb-12">
             <div>
-              <span className="text-teal-600 font-bold tracking-widest uppercase text-sm mb-2 block">Updates</span>
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-900">News & Events</h2>
+              <span className="text-teal-600 font-bold tracking-widest uppercase text-sm mb-2 block">{t('news.tag')}</span>
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900">{t('news.title')}</h2>
             </div>
             <button 
               onClick={() => setShowAllNews(true)}
               className="hidden md:flex items-center text-slate-500 font-bold hover:text-teal-600 transition-colors bg-transparent border-none cursor-pointer"
             >
-              View All Posts <ArrowRight className="w-4 h-4 ml-2" />
+              {t('news.view_all')} <ArrowRight className="w-4 h-4 ml-2" />
             </button>
           </div>
 
@@ -499,7 +557,7 @@ const Home: React.FC = () => {
                             onClick={() => setSelectedNews(item)}
                             className="inline-flex items-center text-teal-600 font-bold text-sm mt-auto group-hover:translate-x-1 transition-transform cursor-pointer bg-transparent border-0 p-0 text-left"
                             >
-                            Read Full Story <ArrowRight className="w-4 h-4 ml-1" />
+                            {t('news.read_more')} <ArrowRight className="w-4 h-4 ml-1" />
                             </button>
                         </div>
                         </div>
@@ -509,7 +567,7 @@ const Home: React.FC = () => {
                 </Slider>
             ) : (
                 <div className="text-center py-12 text-slate-500">
-                    <p>No news updates available at the moment.</p>
+                    <p>{t('news.no_news')}</p>
                 </div>
             )}
           </div>
@@ -519,7 +577,7 @@ const Home: React.FC = () => {
                onClick={() => setShowAllNews(true)}
                className="inline-flex items-center text-slate-500 font-bold hover:text-teal-600 transition-colors bg-transparent border-none cursor-pointer"
              >
-              View All Posts <ArrowRight className="w-4 h-4 ml-2" />
+              {t('news.view_all')} <ArrowRight className="w-4 h-4 ml-2" />
             </button>
           </div>
         </div>
@@ -705,8 +763,8 @@ const Home: React.FC = () => {
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden relative z-10 flex flex-col animate-[fadeIn_0.2s_ease-out]">
                 <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white z-20">
                     <div>
-                         <span className="text-teal-600 font-bold tracking-widest uppercase text-xs mb-1 block">Archives</span>
-                         <h2 className="text-2xl font-bold text-slate-900">All News & Events</h2>
+                         <span className="text-teal-600 font-bold tracking-widest uppercase text-xs mb-1 block">{t('news.tag')}</span>
+                         <h2 className="text-2xl font-bold text-slate-900">{t('news.title')}</h2>
                     </div>
                     <button onClick={() => setShowAllNews(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
                         <X className="w-6 h-6 text-slate-500" />
@@ -743,7 +801,7 @@ const Home: React.FC = () => {
                                             {item.content}
                                         </p>
                                         <span className="inline-flex items-center text-teal-600 font-bold text-sm mt-auto group-hover:translate-x-1 transition-transform">
-                                            Read Full Story <ArrowRight className="w-4 h-4 ml-1" />
+                                            {t('news.read_more')} <ArrowRight className="w-4 h-4 ml-1" />
                                         </span>
                                     </div>
                                 </div>
@@ -821,7 +879,7 @@ const Home: React.FC = () => {
                           onClick={() => setSelectedNews(null)}
                           className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
                         >
-                          Close Article
+                          {t('common.close')}
                         </button>
                      </div>
                  </div>

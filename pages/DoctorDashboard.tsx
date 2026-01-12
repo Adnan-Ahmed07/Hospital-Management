@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../services/authContext';
 import { appointmentApi, doctorApi } from '../services/api';
 import { Appointment, Doctor } from '../types';
-import { Calendar, Clock, User, CheckCircle, XCircle, AlertCircle, Settings } from 'lucide-react';
+import { Calendar, Clock, User, CheckCircle, XCircle, AlertCircle, Settings, Video, Activity } from 'lucide-react';
 
 const DoctorDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -45,6 +45,46 @@ const DoctorDashboard: React.FC = () => {
     } catch (e) {
         alert("Failed to update status");
     }
+  };
+
+  const handleJoinVideo = async (id: string, currentLink?: string) => {
+      if (currentLink) {
+          window.open(currentLink, '_blank');
+          return;
+      }
+
+      // Open tab immediately to avoid popup blocker
+      const newTab = window.open('', '_blank');
+      if (newTab) {
+          newTab.document.write("<html><body style='font-family:sans-serif;text-align:center;padding-top:20%;'><h3>Connecting to Secure Meeting...</h3><p>Please wait while we generate your secure link.</p></body></html>");
+      }
+
+      try {
+          const link = await appointmentApi.generateMeetingLink(id);
+          
+          if (newTab) {
+              newTab.location.href = link;
+          } else {
+              // Fallback if blocked
+              window.location.href = link;
+          }
+
+          // Update local state to reflect the new link immediately
+          setAppointments(prev => prev.map(a => a.id === id ? { ...a, meetingLink: link } : a));
+      } catch (e) {
+          console.error("Failed to generate meeting link", e);
+          if (newTab) newTab.close();
+          alert("Could not start video call. Please try again.");
+      }
+  };
+
+  const handleFlowUpdate = async (id: string, flowStatus: Appointment['flowStatus']) => {
+      try {
+          await appointmentApi.updateFlowStatus(id, flowStatus);
+          setAppointments(prev => prev.map(a => a.id === id ? { ...a, flowStatus } : a));
+      } catch (e) {
+          alert("Failed to update patient flow");
+      }
   };
 
   if (loading) return <div className="p-10 text-center text-slate-500">Loading your dashboard...</div>;
@@ -144,8 +184,8 @@ const DoctorDashboard: React.FC = () => {
                                             </div>
                                         </div>
                                         
-                                        <div className="flex flex-row sm:flex-col items-end gap-2 shrink-0">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${
+                                        <div className="flex flex-col items-end gap-2 shrink-0 min-w-[160px]">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide text-center w-full ${
                                                 appt.status === 'confirmed' ? 'bg-green-100 text-green-700' :
                                                 appt.status === 'cancelled' ? 'bg-red-100 text-red-700' :
                                                 'bg-amber-100 text-amber-700'
@@ -154,7 +194,7 @@ const DoctorDashboard: React.FC = () => {
                                             </span>
                                             
                                             {appt.status === 'pending' && (
-                                                <div className="flex gap-2 mt-2">
+                                                <div className="flex gap-2 mt-1 w-full justify-end">
                                                     <button 
                                                         onClick={() => handleStatusUpdate(appt.id, 'confirmed')}
                                                         className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"
@@ -169,6 +209,49 @@ const DoctorDashboard: React.FC = () => {
                                                     >
                                                         <XCircle className="w-5 h-5" />
                                                     </button>
+                                                </div>
+                                            )}
+
+                                            {appt.status === 'confirmed' && (
+                                                <div className="w-full flex flex-col gap-2 mt-2">
+                                                    <button 
+                                                        onClick={() => handleJoinVideo(appt.id, appt.meetingLink)}
+                                                        className="flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm w-full"
+                                                    >
+                                                        <Video className="w-3 h-3" /> 
+                                                        {appt.meetingLink ? 'Join Call' : 'Start Telemedicine'}
+                                                    </button>
+
+                                                    {/* Patient Flow Controls */}
+                                                    <div className="pt-2 border-t border-slate-100 w-full">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                                                                <Activity className="w-3 h-3" /> Patient Flow
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center justify-between gap-1 bg-slate-50 p-1 rounded-lg">
+                                                            {['checked-in', 'vitals', 'consulting', 'complete'].map((step) => {
+                                                                const isActive = appt.flowStatus === step;
+                                                                const labels: Record<string, string> = { 'checked-in': 'Check-In', 'vitals': 'Vitals', 'consulting': 'Doctor', 'complete': 'Done' };
+                                                                return (
+                                                                    <button
+                                                                        key={step}
+                                                                        onClick={() => handleFlowUpdate(appt.id, step as any)}
+                                                                        className={`
+                                                                            flex-1 py-1.5 text-[10px] font-bold rounded-md transition-all
+                                                                            ${isActive 
+                                                                                ? 'bg-white text-teal-700 shadow-sm border border-slate-200' 
+                                                                                : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
+                                                                            }
+                                                                        `}
+                                                                        title={labels[step]}
+                                                                    >
+                                                                        {labels[step]}
+                                                                    </button>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>

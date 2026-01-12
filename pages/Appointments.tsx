@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { doctorApi, appointmentApi } from '../services/api';
 import { Doctor } from '../types';
 import { Calendar, Clock, AlertCircle, CheckCircle, User, FileText, Phone, Mail, Loader2, Info, Sun, Sunset, Ban, Sparkles } from 'lucide-react';
 import { useAuth } from '../services/authContext';
+import { useLanguage } from '../services/languageContext';
 
 const Appointments: React.FC = () => {
   const [searchParams] = useSearchParams();
   const preSelectedDoctorId = searchParams.get('doctorId');
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
+  const { t } = useLanguage();
   
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -184,6 +187,35 @@ const Appointments: React.FC = () => {
       setSubmitting(false);
     }
   };
+
+  if (!user) {
+    return (
+        <div className="min-h-screen bg-slate-50 py-20 px-4 flex items-center justify-center">
+            <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8 text-center animate-[fadeIn_0.3s_ease-out]">
+                <div className="w-16 h-16 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-teal-100">
+                    <User className="w-8 h-8" />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-900 mb-3 font-serif">{t('booking.login_required')}</h2>
+                <p className="text-slate-500 mb-8 leading-relaxed text-sm sm:text-base">{t('booking.login_desc')}</p>
+                
+                <div className="space-y-3">
+                    <button 
+                        onClick={() => navigate('/login', { state: { from: location } })}
+                        className="w-full bg-slate-900 text-white px-6 py-3.5 rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20 active:scale-[0.98]"
+                    >
+                        {t('booking.login_btn')}
+                    </button>
+                    <button 
+                        onClick={() => navigate('/')}
+                        className="w-full text-slate-500 font-bold hover:text-slate-800 transition-colors py-2 text-sm"
+                    >
+                        {t('booking.back_home')}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+  }
 
   if (success) {
     return (

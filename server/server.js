@@ -102,108 +102,37 @@ const News = mongoose.model('News', newsSchema);
 const seedDatabase = async () => {
     try {
         const docCount = await Doctor.countDocuments();
-        const sampleDoctors = [
-            {
-                name: 'Dr. Sarah Johnson',
-                email: 'sarah@hospital.com',
-                specialization: 'Cardiology',
-                image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300&h=300',
-                availability: ['Mon', 'Wed', 'Fri'],
-                experience: 12,
-                description: 'Expert cardiologist with over a decade of experience in treating complex heart conditions.'
-            },
-            {
-                name: 'Dr. Michael Chen',
-                email: 'michael@hospital.com',
-                specialization: 'Neurology',
-                image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=300&h=300',
-                availability: ['Tue', 'Thu'],
-                experience: 8,
-                description: 'Specializes in neurological disorders and stroke rehabilitation.'
-            },
-            {
-                name: 'Dr. Emily Williams',
-                email: 'emily@hospital.com',
-                specialization: 'Pediatrics',
-                image: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?auto=format&fit=crop&q=80&w=300&h=300',
-                availability: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-                experience: 15,
-                description: 'Dedicated to providing compassionate care for children of all ages.'
-            },
-            {
-                name: 'Dr. Aisha Rahman',
-                email: 'aisha@hospital.com',
-                specialization: 'Dermatology',
-                image: 'https://images.unsplash.com/photo-1502791451861-8a5fbb0f8f50?auto=format&fit=crop&q=80&w=300&h=300',
-                availability: ['Mon', 'Thu'],
-                experience: 7,
-                description: 'Board-certified dermatologist focusing on medical and cosmetic skin care.'
-            },
-            {
-                name: 'Dr. Luis Alvarez',
-                email: 'luis@hospital.com',
-                specialization: 'Orthopedics',
-                image: 'https://images.unsplash.com/photo-1526256262350-7da7584cf5eb?auto=format&fit=crop&q=80&w=300&h=300',
-                availability: ['Tue', 'Wed'],
-                experience: 11,
-                description: 'Experienced orthopedic surgeon specializing in sports injuries and joint replacement.'
-            },
-            {
-                name: 'Dr. Priya Kapoor',
-                email: 'priya@hospital.com',
-                specialization: 'Endocrinology',
-                image: 'https://images.unsplash.com/photo-1542736667-069246bdbc19?auto=format&fit=crop&q=80&w=300&h=300',
-                availability: ['Wed', 'Fri'],
-                experience: 9,
-                description: 'Endocrinologist with a focus on diabetes management and thyroid disorders.'
-            },
-            {
-                name: 'Dr. Daniel Okafor',
-                email: 'daniel@hospital.com',
-                specialization: 'Psychiatry',
-                image: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=300&h=300',
-                availability: ['Mon', 'Tue', 'Thu'],
-                experience: 14,
-                description: 'Provides evidence-based psychiatric care for adolescents and adults.'
-            },
-            {
-                name: 'Dr. Elena Petrova',
-                email: 'elena@hospital.com',
-                specialization: 'Oncology',
-                image: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?auto=format&fit=crop&q=80&w=300&h=300',
-                availability: ['Tue', 'Thu', 'Fri'],
-                experience: 18,
-                description: 'Medical oncologist with expertise in precision therapies and clinical trials.'
-            },
-            {
-                name: 'Dr. Omar Farouk',
-                email: 'omar@hospital.com',
-                specialization: 'Gastroenterology',
-                image: 'https://images.unsplash.com/photo-1521790945508-bf2a36314e85?auto=format&fit=crop&q=80&w=300&h=300',
-                availability: ['Mon', 'Fri'],
-                experience: 10,
-                description: 'Specialist in GI disorders, endoscopy, and liver disease management.'
-            },
-            {
-                name: 'Dr. Mei Lin',
-                email: 'mei@hospital.com',
-                specialization: 'Ophthalmology',
-                image: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=300&h=300',
-                availability: ['Wed', 'Thu'],
-                experience: 6,
-                description: 'Ophthalmologist providing comprehensive eye care and minor surgical procedures.'
-            }
-        ];
-
         if (docCount === 0) {
             console.log('Seeding Doctors...');
-            await Doctor.insertMany(sampleDoctors);
-        } else if (docCount < sampleDoctors.length) {
-            console.log(`Found ${docCount} doctors, adding missing sample doctors...`);
-            for (const sd of sampleDoctors) {
-                const exists = await Doctor.findOne({ email: sd.email });
-                if (!exists) await Doctor.create(sd);
-            }
+            await Doctor.insertMany([
+                {
+                    name: 'Dr. Sarah Johnson',
+                    email: 'sarah@hospital.com',
+                    specialization: 'Cardiology',
+                    image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300&h=300',
+                    availability: ['Mon', 'Wed', 'Fri'],
+                    experience: 12,
+                    description: 'Expert cardiologist with over a decade of experience in treating complex heart conditions.'
+                },
+                {
+                    name: 'Dr. Michael Chen',
+                    email: 'michael@hospital.com',
+                    specialization: 'Neurology',
+                    image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=300&h=300',
+                    availability: ['Tue', 'Thu'],
+                    experience: 8,
+                    description: 'Specializes in neurological disorders and stroke rehabilitation.'
+                },
+                {
+                    name: 'Dr. Emily Williams',
+                    email: 'emily@hospital.com',
+                    specialization: 'Pediatrics',
+                    image: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?auto=format&fit=crop&q=80&w=300&h=300',
+                    availability: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+                    experience: 15,
+                    description: 'Dedicated to providing compassionate care for children of all ages.'
+                }
+            ]);
         }
         
         const adminExists = await User.findOne({ email: 'admin@medicare.com' });
