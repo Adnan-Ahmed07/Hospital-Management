@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const multer = require('multer');
 const { Readable } = require('stream');
+const nodemailer = require('nodemailer');
 
 // --- Configuration ---
 const app = express();
@@ -34,6 +35,70 @@ app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
 });
+
+// --- Nodemailer Transporter ---
+const transporter = nodemailer.createTransport({
+    service: 'gmail', // Or your preferred provider
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
+});
+
+// Email Helper Function
+const sendConfirmationEmail = async (appointment) => {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        console.log('--- Email Simulated (No Credentials) ---');
+        console.log(`To: ${appointment.patientEmail}`);
+        console.log(`Subject: Appointment Confirmed with Dr. ${appointment.doctorName}`);
+        console.log(`Details: ${new Date(appointment.date).toLocaleString()}`);
+        return;
+    }
+
+    const mailOptions = {
+        from: `"AD Hospital" <${process.env.EMAIL_USER}>`,
+        to: appointment.patientEmail,
+        subject: `Confirmed: Appointment with Dr. ${appointment.doctorName}`,
+        html: `
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; color: #1e293b;">
+                <div style="background-color: #0d9488; padding: 30px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 24px;">Appointment Confirmed</h1>
+                </div>
+                <div style="padding: 40px; background-color: #ffffff;">
+                    <p style="font-size: 18px; font-weight: 600;">Hello ${appointment.patientName},</p>
+                    <p style="line-height: 1.6;">Your appointment request at <strong>AD Hospital</strong> has been successfully reviewed and confirmed by our medical team.</p>
+                    
+                    <div style="background-color: #f8fafc; border-radius: 8px; padding: 20px; margin: 30px 0;">
+                        <h2 style="font-size: 14px; text-transform: uppercase; color: #64748b; margin-top: 0; letter-spacing: 0.05em;">Visit Details</h2>
+                        <p style="margin: 5px 0;"><strong>Doctor:</strong> Dr. ${appointment.doctorName}</p>
+                        <p style="margin: 5px 0;"><strong>Date:</strong> ${new Date(appointment.date).toLocaleDateString()}</p>
+                        <p style="margin: 5px 0;"><strong>Time:</strong> ${new Date(appointment.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+
+                    <p style="line-height: 1.6;">Please arrive 15 minutes prior to your scheduled time. If this is a tele-consultation, your meeting link will be available in your patient dashboard.</p>
+                    
+                    <div style="text-align: center; margin-top: 40px;">
+                        <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/#/patient-dashboard" 
+                           style="background-color: #0f172a; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
+                           View Patient Dashboard
+                        </a>
+                    </div>
+                </div>
+                <div style="background-color: #f1f5f9; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8;">
+                    <p>&copy; ${new Date().getFullYear()} AD Hospital. 123 Hospital Ave, Gulshan, Dhaka.</p>
+                    <p>Hotline: 10666 | Emergency: 999</p>
+                </div>
+            </div>
+        `
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log(`Confirmation email sent to ${appointment.patientEmail}`);
+    } catch (error) {
+        console.error('Failed to send email:', error);
+    }
+};
 
 // --- Cloudinary Config ---
 let cloudinary;
@@ -385,12 +450,65 @@ app.get('/api/appointments/booked-slots', async (req, res) => {
 app.put('/api/appointments/:id', async (req, res) => {
     try {
         const { status } = req.body;
+        const oldAppt = await Appointment.findById(req.params.id);
+        
+        if (!oldAppt) return res.status(404).json({ message: 'Appointment not found' });
+
         if (status && status !== 'pending') {
             if (req.body.isRead === undefined) req.body.isRead = false;
         }
+
         const appt = await Appointment.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        
+        // Trigger Confirmation Email if status changed to 'confirmed'
+        if (oldAppt.status !== 'confirmed' && status === 'confirmed') {
+            sendConfirmationEmail(appt);
+        }
+
         res.json({ ...appt.toObject(), id: appt._id });
     } catch (e) { res.status(500).json({ message: e.message }); }
+});
+
+// --- FEATURE 6: AI Chatbot Endpoint ---
+app.post('/api/chat', async (req, res) => {
+    try {
+        const { message, history } = req.body;
+        
+        // Dynamic import because @google/genai is ESM
+        const { GoogleGenAI } = await import('@google/genai');
+
+        if (!process.env.API_KEY) {
+             // Fallback for demo if API key is not set
+             return res.json({ text: "I'm sorry, I can't connect to the AI service right now. Please configure the API Key." });
+        }
+
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+        const contents = [];
+        if (history && Array.isArray(history)) {
+            history.forEach(msg => {
+                contents.push({
+                    role: msg.role === 'user' ? 'user' : 'model',
+                    parts: [{ text: msg.text }]
+                });
+            });
+        }
+        // Add current message
+        contents.push({ role: 'user', parts: [{ text: message }] });
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: contents,
+            config: {
+                systemInstruction: "You are a helpful, empathetic medical assistant for AD Hospital. Your name is 'AD Assistant'. You help patients find doctors, understand services, and get general health information. You can provide general advice but NEVER provide a specific medical diagnosis. Always be concise and polite. If asked about doctors, mention we have specialists in Cardiology, Neurology, Pediatrics, etc.",
+            }
+        });
+
+        res.json({ text: response.text });
+    } catch (e) {
+        console.error("Chat Error:", e);
+        res.status(500).json({ message: "Failed to generate response." });
+    }
 });
 
 // News Routes

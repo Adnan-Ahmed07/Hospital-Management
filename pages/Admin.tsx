@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { appointmentApi, doctorApi, newsApi, uploadApi } from '../services/api';
 import { Appointment, Doctor, NewsItem } from '../types';
-import { Calendar, Users, Activity, Trash2, Check, X, Plus, Search, Filter, Pencil, AlertCircle, Newspaper, Image as ImageIcon, Upload, Play, Server, Database, Cloud } from 'lucide-react';
+import { Calendar, Users, Activity, Trash2, Check, X, Plus, Search, Filter, Pencil, AlertCircle, Newspaper, Image as ImageIcon, Upload, Play, Server, Database, Cloud, Clock, History, ExternalLink } from 'lucide-react';
 
 // Helper
 const isVideo = (url?: string) => {
@@ -16,6 +16,15 @@ const Admin: React.FC = () => {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   
+  // Status Filter State
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'cancelled'>('all');
+
+  // History State
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [selectedPatientHistory, setSelectedPatientHistory] = useState<Appointment[]>([]);
+  const [historyPatientName, setHistoryPatientName] = useState('');
+
   // Health Status
   const [health, setHealth] = useState<{server: string; database: string; cloudinary: string} | null>(null);
 
@@ -85,6 +94,20 @@ const Admin: React.FC = () => {
   const handleStatusUpdate = async (id: string, status: Appointment['status']) => {
     await appointmentApi.updateStatus(id, status);
     fetchData(); // Refresh
+  };
+
+  const handleViewHistory = async (patientName: string, patientEmail: string) => {
+    setHistoryPatientName(patientName);
+    setHistoryModalOpen(true);
+    setHistoryLoading(true);
+    try {
+      const history = await appointmentApi.getAll({ patientEmail });
+      setSelectedPatientHistory(history);
+    } catch (error) {
+      console.error("Failed to fetch history", error);
+    } finally {
+      setHistoryLoading(false);
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'doctor' | 'news') => {
@@ -227,6 +250,16 @@ const Admin: React.FC = () => {
       }
   };
 
+  // Filtered Appointments Logic
+  const filteredAppointments = appointments.filter(appt => {
+    if (statusFilter === 'all') return true;
+    return appt.status === statusFilter;
+  });
+
+  const getStatusCount = (status: string) => {
+    if (status === 'all') return appointments.length;
+    return appointments.filter(a => a.status === status).length;
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-10">
@@ -343,67 +376,120 @@ const Admin: React.FC = () => {
             {loading ? (
               <div className="text-center py-12 text-slate-500">Loading data...</div>
             ) : activeTab === 'appointments' ? (
-              <div className="overflow-x-auto rounded-xl border border-slate-200">
-                <table className="min-w-full divide-y divide-slate-200">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Patient Info</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Assigned Doctor</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Schedule</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-slate-200">
-                    {appointments.map((appt) => (
-                      <tr key={appt.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-semibold text-slate-900">{appt.patientName}</div>
-                          <div className="text-sm text-slate-500">{appt.patientPhone}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{appt.doctorName}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                          <div className="font-medium">{new Date(appt.date).toLocaleDateString()}</div>
-                          <div className="text-slate-400 text-xs">{new Date(appt.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full ${
-                            appt.status === 'confirmed' ? 'bg-green-100 text-green-700' : 
-                            appt.status === 'cancelled' ? 'bg-red-100 text-red-700' : 
-                            'bg-amber-100 text-amber-700'
-                          }`}>
-                            {appt.status.charAt(0).toUpperCase() + appt.status.slice(1)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          {appt.status === 'pending' && (
-                            <div className="flex justify-end gap-2">
-                              <button 
-                                onClick={() => handleStatusUpdate(appt.id, 'confirmed')} 
-                                className="text-white bg-green-500 hover:bg-green-600 p-1.5 rounded-lg transition-colors shadow-sm"
-                                title="Confirm"
-                              >
-                                <Check className="w-4 h-4" />
-                              </button>
-                              <button 
-                                onClick={() => handleStatusUpdate(appt.id, 'cancelled')} 
-                                className="text-white bg-red-500 hover:bg-red-600 p-1.5 rounded-lg transition-colors shadow-sm"
-                                title="Cancel"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
+              <div className="space-y-6">
+                {/* Status Filter Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm font-bold text-slate-600 uppercase tracking-wider">Filter Status:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: 'all', label: 'All', icon: Activity, color: 'slate' },
+                      { id: 'pending', label: 'Pending', icon: Clock, color: 'amber' },
+                      { id: 'confirmed', label: 'Confirmed', icon: Check, color: 'green' },
+                      { id: 'cancelled', label: 'Cancelled', icon: X, color: 'red' }
+                    ].map((btn) => (
+                      <button
+                        key={btn.id}
+                        onClick={() => setStatusFilter(btn.id as any)}
+                        className={`
+                          flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border
+                          ${statusFilter === btn.id 
+                            ? `bg-${btn.color}-600 text-white border-${btn.color}-600 shadow-md` 
+                            : `bg-white text-slate-500 border-slate-200 hover:bg-slate-100 hover:text-slate-700`
+                          }
+                        `}
+                      >
+                        <btn.icon className="w-3.5 h-3.5" />
+                        {btn.label}
+                        <span className={`
+                          ml-1 px-1.5 py-0.5 rounded-md text-[10px]
+                          ${statusFilter === btn.id ? 'bg-white/20' : 'bg-slate-100'}
+                        `}>
+                          {getStatusCount(btn.id)}
+                        </span>
+                      </button>
                     ))}
-                    {appointments.length === 0 && (
-                        <tr>
-                            <td colSpan={5} className="px-6 py-12 text-center text-slate-500">No appointments found.</td>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto rounded-xl border border-slate-200">
+                  <table className="min-w-full divide-y divide-slate-200">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Patient Info</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Assigned Doctor</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Schedule</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-slate-200">
+                      {filteredAppointments.map((appt) => (
+                        <tr key={appt.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-semibold text-slate-900">{appt.patientName}</div>
+                            <div className="text-sm text-slate-500">{appt.patientPhone}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{appt.doctorName}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                            <div className="font-medium">{new Date(appt.date).toLocaleDateString()}</div>
+                            <div className="text-slate-400 text-xs">{new Date(appt.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full ${
+                              appt.status === 'confirmed' ? 'bg-green-100 text-green-700' : 
+                              appt.status === 'cancelled' ? 'bg-red-100 text-red-700' : 
+                              'bg-amber-100 text-amber-700'
+                            }`}>
+                              {appt.status.charAt(0).toUpperCase() + appt.status.slice(1)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex justify-end gap-2">
+                                <button 
+                                  onClick={() => handleViewHistory(appt.patientName, appt.patientEmail)}
+                                  className="text-slate-400 hover:text-blue-600 p-1.5 rounded-lg transition-colors hover:bg-blue-50"
+                                  title="View History"
+                                >
+                                  <History className="w-4 h-4" />
+                                </button>
+                                {appt.status === 'pending' && (
+                                  <>
+                                    <button 
+                                      onClick={() => handleStatusUpdate(appt.id, 'confirmed')} 
+                                      className="text-white bg-green-500 hover:bg-green-600 p-1.5 rounded-lg transition-colors shadow-sm"
+                                      title="Confirm"
+                                    >
+                                      <Check className="w-4 h-4" />
+                                    </button>
+                                    <button 
+                                      onClick={() => handleStatusUpdate(appt.id, 'cancelled')} 
+                                      className="text-white bg-red-500 hover:bg-red-600 p-1.5 rounded-lg transition-colors shadow-sm"
+                                      title="Cancel"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </>
+                                )}
+                            </div>
+                          </td>
                         </tr>
-                    )}
-                  </tbody>
-                </table>
+                      ))}
+                      {filteredAppointments.length === 0 && (
+                          <tr>
+                              <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                                {statusFilter === 'all' 
+                                  ? 'No appointments found.' 
+                                  : `No ${statusFilter} appointments found.`
+                                }
+                              </td>
+                          </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             ) : activeTab === 'doctors' ? (
               <div>
@@ -724,6 +810,91 @@ const Admin: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* History Modal */}
+      {historyModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+          <div 
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" 
+            onClick={() => setHistoryModalOpen(false)}
+          />
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden relative z-10 flex flex-col animate-[fadeIn_0.2s_ease-out]">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-20">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                  <History className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900">Appointment History</h2>
+                  <p className="text-slate-500 text-sm">Patient: <span className="font-semibold text-slate-900">{historyPatientName}</span></p>
+                </div>
+              </div>
+              <button onClick={() => setHistoryModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <X className="w-6 h-6 text-slate-500" />
+              </button>
+            </div>
+            
+            <div className="overflow-y-auto p-6 bg-slate-50 flex-grow">
+              {historyLoading ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-4">
+                  <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                  <p className="text-slate-500 font-medium">Fetching historical records...</p>
+                </div>
+              ) : selectedPatientHistory.length > 0 ? (
+                <div className="space-y-4">
+                  {selectedPatientHistory.map((hAppt) => (
+                    <div key={hAppt.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex flex-col md:flex-row justify-between gap-4">
+                        <div className="flex gap-4 items-start">
+                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center min-w-[70px]">
+                            <span className="block text-xl font-bold text-slate-900">{new Date(hAppt.date).getDate()}</span>
+                            <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">{new Date(hAppt.date).toLocaleString('default', { month: 'short' })}</span>
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-slate-900">Dr. {hAppt.doctorName}</h4>
+                            <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                                <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(hAppt.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {new Date(hAppt.date).getFullYear()}</span>
+                            </div>
+                            <div className="mt-3 text-sm text-slate-600">
+                              <p><span className="font-semibold text-slate-900">Symptoms:</span> {hAppt.symptoms}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-2 shrink-0">
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${
+                            hAppt.status === 'confirmed' ? 'bg-green-50 text-green-700 border-green-100' :
+                            hAppt.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-100' :
+                            'bg-amber-50 text-amber-700 border-amber-100'
+                          }`}>
+                            {hAppt.status}
+                          </span>
+                          {hAppt.flowStatus === 'complete' && (
+                            <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded border border-teal-100">Visit Completed</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
+                  <p className="text-slate-500">No previous appointment history found.</p>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-6 border-t border-slate-100 bg-white flex justify-end">
+                <button 
+                  onClick={() => setHistoryModalOpen(false)}
+                  className="px-6 py-2.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/10"
+                >
+                  Close Records
+                </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

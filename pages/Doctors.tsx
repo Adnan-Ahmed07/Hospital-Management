@@ -1,36 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { doctorApi } from '../services/api';
 import { Doctor } from '../types';
-import { Search, Filter, Star, Clock, ChevronLeft, ChevronRight, X, Calendar, GraduationCap, AlertCircle } from 'lucide-react';
+import { Search, Filter, Star, Clock, ChevronRight, X, Calendar, GraduationCap, AlertCircle } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
-import Slider from 'react-slick';
-
-// Custom Arrow Components
-const NextArrow = (props: any) => {
-  const { onClick, className } = props;
-  return (
-    <button
-      onClick={onClick}
-      className={`absolute -right-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-white rounded-full shadow-lg border border-slate-100 hover:bg-teal-50 text-slate-600 hover:text-teal-600 transition-all group ${className?.includes('slick-disabled') ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-      aria-label="Next"
-    >
-      <ChevronRight className="w-6 h-6 group-hover:scale-110 transition-transform" />
-    </button>
-  );
-};
-
-const PrevArrow = (props: any) => {
-  const { onClick, className } = props;
-  return (
-    <button
-      onClick={onClick}
-      className={`absolute -left-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-white rounded-full shadow-lg border border-slate-100 hover:bg-teal-50 text-slate-600 hover:text-teal-600 transition-all group ${className?.includes('slick-disabled') ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-      aria-label="Previous"
-    >
-      <ChevronLeft className="w-6 h-6 group-hover:scale-110 transition-transform" />
-    </button>
-  );
-};
 
 const MiniCalendar = ({ availability }: { availability: string[] }) => {
   const today = new Date();
@@ -139,40 +111,15 @@ const Doctors: React.FC = () => {
     return matchesSearch && matchesSpecialty;
   });
 
-  const settings = {
-    dots: true,
-    infinite: filteredDoctors.length > 3,
-    speed: 500,
-    slidesToShow: 3,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 5000,
-    pauseOnHover: true,
-    nextArrow: <NextArrow />,
-    prevArrow: <PrevArrow />,
-    responsive: [
-      {
-        breakpoint: 1024,
-        settings: {
-          slidesToShow: 2,
-          slidesToScroll: 1,
-          infinite: filteredDoctors.length > 2,
-        }
-      },
-      {
-        breakpoint: 768,
-        settings: {
-          slidesToShow: 1,
-          slidesToScroll: 1,
-          infinite: filteredDoctors.length > 1,
-          arrows: false
-        }
-      }
-    ]
-  };
-
   return (
     <div className="min-h-screen bg-slate-50 py-12 relative">
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.98); }
+          to { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div>
@@ -184,8 +131,8 @@ const Doctors: React.FC = () => {
           </Link>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-10">
+        {/* Filters - Sticky for Mobile "Fixed" */}
+        <div className="sticky top-20 z-30 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-10 transition-all">
           <div className="grid md:grid-cols-2 gap-6">
             <div className="relative">
               <label className="block text-sm font-medium text-slate-700 mb-2">Search Doctor</label>
@@ -219,17 +166,19 @@ const Doctors: React.FC = () => {
           </div>
         </div>
 
-        {/* Doctor Slider */}
+        {/* Doctor Grid - Flexible Layout */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
           </div>
         ) : filteredDoctors.length > 0 ? (
-          <div className="px-4 md:px-6">
-            <Slider {...settings} className="-mx-4 pb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredDoctors.map(doctor => (
-                <div key={doctor.id} className="px-4 h-full outline-none">
-                  <div className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 overflow-hidden group flex flex-col h-full cursor-pointer relative" onClick={() => setSelectedDoctor(doctor)}>
+                <div key={doctor.id} className="h-full">
+                  <div 
+                    className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 overflow-hidden group flex flex-col h-full cursor-pointer relative" 
+                    onClick={() => setSelectedDoctor(doctor)}
+                  >
                     <div className="p-6 pb-0 flex items-start gap-4">
                       <img 
                         src={doctor.image} 
@@ -268,14 +217,19 @@ const Doctors: React.FC = () => {
                     </div>
 
                     <div className="p-6 pt-0 mt-auto">
-                      <button className="block w-full text-center bg-white border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white font-semibold py-3 rounded-xl transition-all duration-300">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedDoctor(doctor);
+                        }}
+                        className="block w-full text-center bg-white border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white font-semibold py-3 rounded-xl transition-all duration-300"
+                      >
                         View Profile
                       </button>
                     </div>
                   </div>
                 </div>
               ))}
-            </Slider>
           </div>
         ) : (
           <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">

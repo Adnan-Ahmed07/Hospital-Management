@@ -49,7 +49,7 @@ const Layout: React.FC = () => {
     <div className="flex flex-col min-h-screen font-sans bg-stone-50">
       
       {/* Floating Action Buttons */}
-      <div className="fixed right-0 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-2 p-2 pointer-events-none">
+      <div className="fixed right-0 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2 p-2 pointer-events-none">
         <a href="tel:10666" className="bg-teal-700 text-white p-3 rounded-l-xl shadow-lg hover:bg-teal-800 transition-all group relative flex items-center justify-end w-12 hover:w-48 overflow-hidden pointer-events-auto">
             <span className="absolute right-14 opacity-0 group-hover:opacity-100 whitespace-nowrap font-medium transition-opacity">{t('nav.hotline')}: 10666</span>
             <Phone className="w-6 h-6 shrink-0" />

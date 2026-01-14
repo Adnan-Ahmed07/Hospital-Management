@@ -47,16 +47,24 @@ const Home: React.FC = () => {
   const [showAllNews, setShowAllNews] = useState(false);
   const [loadingNews, setLoadingNews] = useState(true);
   
+  // Parallax State
+  const [scrollY, setScrollY] = useState(0);
+
   // New State for Modals
   const [showVideo, setShowVideo] = useState(false);
   const [showLearnMore, setShowLearnMore] = useState(false);
   const [showCertificates, setShowCertificates] = useState(false);
 
   useEffect(() => {
+    const handleScroll = () => requestAnimationFrame(() => setScrollY(window.scrollY));
+    window.addEventListener('scroll', handleScroll);
+    
     newsApi.getAll()
       .then(data => setNews(data))
       .catch(err => console.warn("Using offline news data"))
       .finally(() => setLoadingNews(false));
+
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const departments: Record<string, string[]> = {
@@ -108,70 +116,110 @@ const Home: React.FC = () => {
 
   return (
     <div className="flex flex-col">
+      {/* Inject Keyframes for entrance animations */}
+      <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
       {/* Hero Section */}
-      <section className="relative min-h-[700px] flex items-center bg-slate-900 overflow-hidden">
-        <div className="absolute inset-0">
+      <section className="relative min-h-[95vh] flex items-center bg-slate-950 overflow-hidden">
+        {/* Parallax Background */}
+        <div className="absolute inset-0 z-0">
           <img 
             src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=2400" 
             alt="Hospital Background"
-            className="w-full h-full object-cover opacity-25"
+            className="w-full h-[120%] object-cover opacity-40 will-change-transform"
+            style={{ transform: `translate3d(0, ${scrollY * 0.5}px, 0)` }} 
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/80 to-slate-900/20" />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/90 to-slate-900/30" />
+          
+          {/* Animated decorative blobs */}
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-teal-500/10 rounded-full blur-[100px] mix-blend-screen animate-pulse" style={{ animationDuration: '4s' }} />
+          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[100px] mix-blend-screen animate-pulse" style={{ animationDuration: '6s' }} />
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full pt-20">
-          <div className="max-w-3xl animate-fade-in-up">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-teal-500/20 border border-teal-500/30 rounded-full mb-6 backdrop-blur-sm">
-              <span className="relative flex h-2 w-2">
+          <div className="max-w-5xl">
+            
+            {/* JCI Badge */}
+            <div 
+                className="inline-flex items-center gap-3 px-5 py-2.5 bg-teal-900/30 border border-teal-500/30 rounded-full mb-10 backdrop-blur-md opacity-0 animate-[fadeInUp_1s_ease-out_forwards]"
+            >
+              <span className="relative flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-teal-500"></span>
               </span>
-              <span className="text-teal-300 font-bold tracking-wide text-xs uppercase">{t('hero.jci')}</span>
+              <span className="text-teal-300 font-bold tracking-[0.2em] text-xs uppercase">{t('hero.jci')}</span>
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-bold text-white mb-8 leading-tight tracking-tight">
-              {t('hero.title_start')} <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-emerald-400">{t('hero.title_end')}</span>
-            </h1>
-            
-            <p className="text-xl text-slate-200 mb-10 font-light leading-relaxed max-w-2xl">
-              {t('hero.subtitle')}
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link 
-                to="/appointments" 
-                className="group bg-teal-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-teal-700 transition-all shadow-lg shadow-teal-900/20 flex items-center justify-center gap-2"
-              >
-                {t('hero.book_btn')}
-                <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link 
-                to="/doctors" 
-                className="group bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 py-4 rounded-xl font-bold hover:bg-white/20 transition-all flex items-center justify-center gap-2"
-              >
-                {t('hero.find_btn')}
-                <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 -ml-5 group-hover:ml-0 transition-all duration-300" />
-              </Link>
+            {/* Content Container with scroll fade effect */}
+            <div 
+                style={{ 
+                    transform: `translate3d(0, ${scrollY * -0.1}px, 0)`,
+                    opacity: Math.max(0, 1 - scrollY / 600)
+                }}
+                className="will-change-transform"
+            >
+                <h1 className="text-6xl md:text-8xl lg:text-9xl font-bold text-white mb-8 leading-[1.05] tracking-tight opacity-0 animate-[fadeInUp_1s_ease-out_0.2s_forwards]">
+                  {t('hero.title_start')} <br/>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-emerald-300 to-teal-500">
+                      {t('hero.title_end')}
+                  </span>
+                </h1>
+                
+                <p className="text-xl md:text-2xl text-slate-300 mb-14 font-light leading-relaxed max-w-2xl opacity-0 animate-[fadeInUp_1s_ease-out_0.4s_forwards]">
+                  {t('hero.subtitle')}
+                </p>
+                
+                <div className="flex flex-col sm:flex-row gap-6 mb-20 opacity-0 animate-[fadeInUp_1s_ease-out_0.6s_forwards]">
+                  <Link 
+                    to="/appointments" 
+                    className="group bg-teal-600 text-white px-10 py-5 rounded-2xl font-bold hover:bg-teal-500 transition-all shadow-2xl shadow-teal-900/40 hover:shadow-teal-900/60 flex items-center justify-center gap-3 text-lg transform hover:-translate-y-1"
+                  >
+                    {t('hero.book_btn')}
+                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                  <Link 
+                    to="/doctors" 
+                    className="group bg-white/5 backdrop-blur-md text-white border border-white/10 px-10 py-5 rounded-2xl font-bold hover:bg-white/10 transition-all flex items-center justify-center gap-3 text-lg transform hover:-translate-y-1"
+                  >
+                    {t('hero.find_btn')}
+                    <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 -ml-5 group-hover:ml-0 transition-all duration-300" />
+                  </Link>
+                </div>
             </div>
 
-            <div className="mt-16 flex items-center gap-8 border-t border-white/10 pt-8">
-              <div>
-                <div className="text-3xl font-bold text-white mb-0.5">25+</div>
-                <div className="text-slate-400 text-sm font-medium uppercase tracking-wider">{t('hero.stat_years')}</div>
+            {/* Stats - Staggered entrance and independent parallax speed */}
+            <div 
+                className="grid grid-cols-3 gap-6 md:gap-12 p-8 md:p-10 rounded-3xl bg-white/5 backdrop-blur-lg border border-white/10 opacity-0 animate-[fadeInUp_1s_ease-out_0.8s_forwards] max-w-3xl hover:bg-white/10 transition-colors"
+                style={{ transform: `translate3d(0, ${scrollY * -0.05}px, 0)` }}
+            >
+              <div className="text-center md:text-left group">
+                <div className="text-4xl md:text-5xl font-bold text-white mb-2 group-hover:text-teal-400 transition-colors">25+</div>
+                <div className="text-slate-400 text-xs md:text-sm font-bold uppercase tracking-widest">{t('hero.stat_years')}</div>
               </div>
-              <div className="w-px h-10 bg-white/10"></div>
-              <div>
-                <div className="text-3xl font-bold text-white mb-0.5">150+</div>
-                <div className="text-slate-400 text-sm font-medium uppercase tracking-wider">{t('hero.stat_docs')}</div>
+              <div className="text-center md:text-left border-l border-white/10 pl-6 md:pl-12 group">
+                <div className="text-4xl md:text-5xl font-bold text-white mb-2 group-hover:text-teal-400 transition-colors">150+</div>
+                <div className="text-slate-400 text-xs md:text-sm font-bold uppercase tracking-widest">{t('hero.stat_docs')}</div>
               </div>
-              <div className="w-px h-10 bg-white/10"></div>
-              <div>
-                <div className="text-3xl font-bold text-white mb-0.5">24/7</div>
-                <div className="text-slate-400 text-sm font-medium uppercase tracking-wider">{t('hero.stat_emergency')}</div>
+              <div className="text-center md:text-left border-l border-white/10 pl-6 md:pl-12 group">
+                <div className="text-4xl md:text-5xl font-bold text-white mb-2 group-hover:text-teal-400 transition-colors">24/7</div>
+                <div className="text-slate-400 text-xs md:text-sm font-bold uppercase tracking-widest">{t('hero.stat_emergency')}</div>
               </div>
             </div>
+
           </div>
+        </div>
+
+        {/* Scroll Indicator */}
+        <div 
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/20 animate-bounce cursor-pointer z-20 hover:text-white transition-colors"
+            onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}
+        >
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
         </div>
       </section>
 

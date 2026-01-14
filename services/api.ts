@@ -2,7 +2,7 @@ import { User, Doctor, Appointment, NewsItem } from '../types';
 
 // Use relative path to leverage the Vite proxy defined in vite.config.ts
 const API_URL = '/api';
-const REQUEST_TIMEOUT_MS = 8000; // Increased timeout for better reliability
+const REQUEST_TIMEOUT_MS = 15000; // Increased timeout for AI generation
 
 // --- MOCK DATA FOR FALLBACKS ---
 const MOCK_DOCTORS: Doctor[] = [
@@ -338,6 +338,20 @@ export const newsApi = {
 
   delete: async (id: string): Promise<void> => {
     return request(`/news/${id}`, { method: 'DELETE' });
+  }
+};
+
+export const chatApi = {
+  sendMessage: async (message: string, history: Array<{role: 'user' | 'model', text: string}>) => {
+    try {
+        return await request('/chat', {
+            method: 'POST',
+            body: JSON.stringify({ message, history })
+        });
+    } catch (error) {
+        console.error(error);
+        return { text: "I apologize, but I'm having trouble connecting to the network right now." };
+    }
   }
 };
 
